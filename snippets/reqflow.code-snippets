@@ -1,0 +1,54 @@
+{
+  "ReqFlow Requirement": {
+    "prefix": "reqflow-req",
+    "body": [
+      "---",
+      "id: REQ-${CURRENT_YEAR}-${RANDOM} ",
+      "status: draft",
+      "title: ${1:Title}",
+      "problem: ${2:Problem statement}",
+      "metrics:",
+      "  - ${3:Metric 1}",
+      "risks: []",
+      "---",
+      "# ${1:Title}",
+      "${0}" 
+    ],
+    "description": "Requirement template"
+  },
+  "ReqFlow Design": {
+    "prefix": "reqflow-des",
+    "body": [
+      "---",
+      "id: DES-${CURRENT_YEAR}-${RANDOM}",
+      "requirement: ${1:REQ-YYYY-NNNN}",
+      "status: draft",
+      "decisions:",
+      "  - ${2:Decision 1}",
+      "---",
+      "# Design ${1}",
+      "## Context",
+      "${3}",
+      "## Decisions",
+      "- ${2:Decision 1}",
+      "${0}" 
+    ],
+    "description": "Design template"
+  },
+  "ReqFlow Task": {
+    "prefix": "reqflow-task",
+    "body": [
+      "---",
+      "id: TASK-${CURRENT_YEAR}-${RANDOM}",
+      "requirement: ${1:REQ-YYYY-NNNN}",
+      "design: ${2:DES-YYYY-NNNN}",
+      "status: todo",
+      "acceptance:",
+      "  - ${3:Acceptance criterion}",
+      "---",
+      "# Task ${1}",
+      "${0}" 
+    ],
+    "description": "Task template"
+  }
+}

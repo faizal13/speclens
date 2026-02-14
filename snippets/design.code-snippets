@@ -1,0 +1,25 @@
+{
+  "RakDev AI Design": {
+    "prefix": "rakdev-des",
+    "body": [
+      "---",
+      "id: DES-${CURRENT_YEAR}-${RANDOM}",
+      "requirement: ${1:REQ-YYYY-NNNN}",
+      "status: draft",
+      "decisions:",
+      "  - ${2:Decision 1}",
+      "---",
+      "# Design ${1}",
+      "## Context",
+      "${3}",
+      "## Decisions",
+      "- ${2:Decision 1}",
+      "## Risks",
+      "- ",
+      "## Test Strategy",
+      "- ",
+      "${0}" 
+    ],
+    "description": "Design template"
+  }
+}

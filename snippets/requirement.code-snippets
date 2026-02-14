@@ -1,0 +1,22 @@
+{
+  "RakDev AI Requirement": {
+    "prefix": "rakdev-req",
+    "body": [
+      "---",
+      "id: REQ-${CURRENT_YEAR}-${RANDOM}",
+      "status: draft",
+      "title: ${1:Title}",
+      "problem: ${2:Problem statement}",
+      "scope:",
+      "  in: []",
+      "  out: []",
+      "metrics:",
+      "  - ${3:Metric 1}",
+      "risks: []",
+      "---",
+      "# ${1:Title}",
+      "${0}" 
+    ],
+    "description": "Requirement template"
+  }
+}

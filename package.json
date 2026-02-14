@@ -1,0 +1,74 @@
+{
+  "name": "rakdev-ai-extension",
+  "displayName": "RakDev AI",
+  "icon": "resources/rakdev-ai.png",
+  "description": "Local requirement→design→task workflow support (no CI).",
+  "version": "0.0.4",
+  "publisher": "Rakbank",
+  "engines": { "vscode": ">=1.90.0" },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:docs/requirements"
+  ],
+  "main": "dist/extension.js",
+  "contributes": {
+    "commands": [
+      {"command": "rakdevAi.newRequirement", "title": "RakDev AI: New Requirement"},
+      {"command": "rakdevAi.newDesign", "title": "RakDev AI: New Design"},
+      {"command": "rakdevAi.newTask", "title": "RakDev AI: New Task"},
+      {"command": "rakdevAi.validateWorkspace", "title": "RakDev AI: Validate Workspace"},
+      {"command": "rakdevAi.generateTaskBreakdown", "title": "RakDev AI: Generate Task Breakdown"},
+      {"command": "rakdevAi.showFlowSummary", "title": "RakDev AI: Show Flow Summary"},
+      {"command": "rakdevAi.generateRequirementsDoc", "title": "RakDev AI: Generate Requirements Catalog"},
+      {"command": "rakdevAi.generateDesignFromRequirement", "title": "RakDev AI: Generate Design from Requirement"},
+      {"command": "rakdevAi.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"}
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "RakDev AI Configuration",
+      "properties": {
+        "rakdevAi.idFormats.requirement": {"type": "string", "default": "^REQ-[0-9]{4}-[0-9]{4}$", "description": "Regex for requirement IDs."},
+        "rakdevAi.idFormats.design": {"type": "string", "default": "^DES-[0-9]{4}-[0-9]{4}$", "description": "Regex for design IDs."},
+        "rakdevAi.idFormats.task": {"type": "string", "default": "^TASK-[0-9]{4}-[0-9]{4}$", "description": "Regex for task IDs."},
+        "rakdevAi.enforceApprovedDesignBeforeTask": {"type": "boolean", "default": true, "description": "Require design approved before creating tasks."},
+        "rakdevAi.requiredSections.requirement": {"type": "array", "default": ["problem","metrics"], "items": {"type": "string"}, "description": "Required top-level YAML keys for requirements."},
+        "rakdevAi.requiredSections.design": {"type": "array", "default": ["decisions"], "items": {"type": "string"}, "description": "Required top-level YAML keys for designs."},
+        "rakdevAi.requiredSections.task": {"type": "array", "default": ["acceptance"], "items": {"type": "string"}, "description": "Required top-level YAML keys for tasks."},
+        "rakdevAi.breakdown.includeQualityTasks": {"type": "boolean", "default": true, "description": "Include quality-focused tasks (tests, observability, docs)."},
+        "rakdevAi.breakdown.maxTasks": {"type": "number", "default": 40, "description": "Maximum tasks to generate in breakdown preview."}
+      }
+    },
+    "views": {
+      "explorer": [
+        {"id": "rakdevAi.view", "name": "RakDev AI", "icon": "resources/rakdev-ai.svg"}
+      ]
+    },
+    "snippets": [
+      { "language": "markdown", "path": "./snippets/requirement.code-snippets" },
+      { "language": "markdown", "path": "./snippets/design.code-snippets" },
+      { "language": "markdown", "path": "./snippets/task.code-snippets" }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "lint": "eslint . --ext .ts",
+    "new:req": "node scripts/new.js req",
+    "new:design": "node scripts/new.js design",
+    "new:task": "node scripts/new.js task",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@types/js-yaml": "^4.0.9",
+    "typescript": "^5.4.0",
+    "eslint": "^8.56.0",
+    "vsce": "2.15.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

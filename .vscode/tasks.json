@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "RakDev AI: New Requirement",
+      "type": "shell",
+      "command": "node scripts/new.js req ${input:slug}",
+      "problemMatcher": []
+    },
+    {
+      "label": "RakDev AI: New Design",
+      "type": "shell",
+      "command": "node scripts/new.js design ${input:reqId}",
+      "problemMatcher": []
+    },
+    {
+      "label": "RakDev AI: New Task",
+      "type": "shell",
+      "command": "node scripts/new.js task ${input:reqId} ${input:taskSlug}",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {"id": "slug", "type": "promptString", "description": "Requirement short slug", "default": "feature"},
+    {"id": "reqId", "type": "promptString", "description": "Requirement ID (e.g. REQ-2025-1234)"},
+    {"id": "taskSlug", "type": "promptString", "description": "Task slug", "default": "task"}
+  ]
+}

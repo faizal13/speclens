@@ -1,0 +1,22 @@
+{
+  "RakDev AI Task": {
+    "prefix": "rakdev-task",
+    "body": [
+      "---",
+      "id: TASK-${CURRENT_YEAR}-${RANDOM}",
+      "requirement: ${1:REQ-YYYY-NNNN}",
+      "design: ${2:DES-YYYY-NNNN}",
+      "status: todo",
+      "acceptance:",
+      "  - ${3:Acceptance criterion}",
+      "---",
+      "# Task ${1}",
+      "## Summary",
+      "${4:Short summary}",
+      "## Acceptance Criteria",
+      "- ${3:Acceptance criterion}",
+      "${0}" 
+    ],
+    "description": "Task template"
+  }
+}
