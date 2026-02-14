@@ -58,25 +58,54 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 4. **BA/Dev reviews and iterates** - Edit the spec, add details, refine with AI
 
-5. **Move to plan.md** - Generate architecture/design from the approved spec
+5. **Generate plan.md** - Create architecture/design from the approved spec
+   ```
+   SpecLens: 🏗️ Generate Plan from Spec
+   ```
 
-6. **Break into tasks.md** - Create incremental work items from the plan
+6. **Generate tasks.md** - Break plan into incremental work items
+   ```
+   SpecLens: 📋 Generate Tasks from Plan
+   ```
 
-7. **Execute with CodeLens** - Click "Start Task" buttons to route to AI agent
+7. **Execute with CodeLens** - Click "Start Task" buttons to route tasks to AI agent
 
-### Using the Command
+### Using the Commands
 
-Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and run:
-
+#### 1. Elaborate BA Notes → Spec
+Open Command Palette (`Cmd+Shift+P`) and run:
 ```
 SpecLens: 🧠 Elaborate BA Notes → Spec
 ```
+- Paste rough BA notes
+- Enter feature name (e.g., `user-authentication`)
+- AI generates complete spec.md
+- Save to `specs/[feature-name]/spec.md`
 
-You'll be prompted to:
-1. Paste rough BA notes or describe the requirement
-2. Enter a feature name (e.g., `user-authentication`)
+#### 2. Generate Plan from Spec
+After creating spec.md, run:
+```
+SpecLens: 🏗️ Generate Plan from Spec
+```
+- Select which spec to generate plan from
+- AI creates architecture, tech stack, data models, API design
+- Save to `specs/[feature-name]/plan.md`
 
-The AI agent will open with a detailed prompt to create the spec. Review, iterate, and save to `specs/[feature-name]/spec.md`.
+#### 3. Generate Tasks from Plan
+After creating plan.md, run:
+```
+SpecLens: 📋 Generate Tasks from Plan
+```
+- Select which plan to break down
+- AI creates 15-25 incremental tasks (2-4 hours each)
+- Each task has acceptance criteria and dependencies
+- Save to `specs/[feature-name]/tasks.md`
+
+#### 4. Execute Tasks with CodeLens
+Open `tasks.md` and click CodeLens buttons:
+- **Start Task** - Opens AI agent with task context
+- **Complete Task** - Marks task as done
+- **Block Task** - Flags blockers
 
 **Tip:** Works with **any AI agent** - Copilot, Claude Code, or Cursor. Configure your preference in settings: `speclens.preferredAgent`
 

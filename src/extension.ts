@@ -27,6 +27,8 @@ import {
   viewTaskChanges,
 } from "./commands/task-lifecycle";
 import { elaborateSpec } from "./commands/elaborate-spec";
+import { generatePlanFromSpec } from "./commands/generate-plan";
+import { generateTasksFromPlan } from "./commands/generate-tasks";
 
 let index: WorkspaceIndex;
 let treeProvider: RakdevAiTreeDataProvider;
@@ -122,6 +124,12 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("speclens.elaborateSpec", () =>
       elaborateSpec(),
+    ),
+    vscode.commands.registerCommand("speclens.generatePlan", () =>
+      generatePlanFromSpec(),
+    ),
+    vscode.commands.registerCommand("speclens.generateTasks", () =>
+      generateTasksFromPlan(),
     ),
   );
 

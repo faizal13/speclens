@@ -15,6 +15,8 @@
   "contributes": {
     "commands": [
       {"command": "speclens.elaborateSpec", "title": "SpecLens: 🧠 Elaborate BA Notes → Spec", "category": "SpecLens"},
+      {"command": "speclens.generatePlan", "title": "SpecLens: 🏗️ Generate Plan from Spec", "category": "SpecLens"},
+      {"command": "speclens.generateTasks", "title": "SpecLens: 📋 Generate Tasks from Plan", "category": "SpecLens"},
       {"command": "speclens.newRequirement", "title": "RakDev AI: New Requirement"},
       {"command": "speclens.newDesign", "title": "RakDev AI: New Design"},
       {"command": "speclens.newTask", "title": "RakDev AI: New Task"},
