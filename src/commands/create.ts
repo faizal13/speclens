@@ -46,8 +46,8 @@ export async function validateWorkspace(
     }
   }
   if (problems.length === 0) {
-    vscode.window.showInformationMessage('RakDev AI: No validation issues.');
+    vscode.window.showInformationMessage('SpecLens: No validation issues.');
   } else {
-    vscode.window.showWarningMessage(`RakDev AI issues: \n${problems.join('\n')}`);
+    vscode.window.showWarningMessage(`SpecLens issues: \n${problems.join('\n')}`);
   }
 }

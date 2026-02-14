@@ -14,8 +14,8 @@ export async function taskBreakdown(index: WorkspaceIndex) {
     return;
   }
   const cfg = vscode.workspace.getConfiguration();
-  const includeQuality = cfg.get<boolean>('rakdevAi.breakdown.includeQualityTasks', true);
-  const maxTasks = cfg.get<number>('rakdevAi.breakdown.maxTasks', 40);
+  const includeQuality = cfg.get<boolean>('speclens.breakdown.includeQualityTasks', true);
+  const maxTasks = cfg.get<number>('speclens.breakdown.maxTasks', 40);
   const textDoc = await vscode.workspace.openTextDocument(design.uri);
   const text = textDoc.getText();
   const sections = extractSections(text);
