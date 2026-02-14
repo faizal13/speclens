@@ -36,7 +36,8 @@
         "rakdevAi.requiredSections.design": {"type": "array", "default": ["decisions"], "items": {"type": "string"}, "description": "Required top-level YAML keys for designs."},
         "rakdevAi.requiredSections.task": {"type": "array", "default": ["acceptance"], "items": {"type": "string"}, "description": "Required top-level YAML keys for tasks."},
         "rakdevAi.breakdown.includeQualityTasks": {"type": "boolean", "default": true, "description": "Include quality-focused tasks (tests, observability, docs)."},
-        "rakdevAi.breakdown.maxTasks": {"type": "number", "default": 40, "description": "Maximum tasks to generate in breakdown preview."}
+        "rakdevAi.breakdown.maxTasks": {"type": "number", "default": 40, "description": "Maximum tasks to generate in breakdown preview."},
+        "speclens.preferredAgent": {"type": "string", "enum": ["auto", "copilot", "claude", "cursor", "none"], "default": "auto", "description": "Preferred AI agent for task execution (auto = Claude > Copilot > Cursor)"}
       }
     },
     "views": {
