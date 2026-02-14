@@ -14,6 +14,7 @@
   "main": "dist/extension.js",
   "contributes": {
     "commands": [
+      {"command": "speclens.elaborateSpec", "title": "SpecLens: 🧠 Elaborate BA Notes → Spec", "category": "SpecLens"},
       {"command": "speclens.newRequirement", "title": "RakDev AI: New Requirement"},
       {"command": "speclens.newDesign", "title": "RakDev AI: New Design"},
       {"command": "speclens.newTask", "title": "RakDev AI: New Task"},

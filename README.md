@@ -28,6 +28,60 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 ---
 
+## 🧠 BA → Spec Elaboration Workflow
+
+**The Problem:** Business Analysts often struggle to write formal, well-structured requirements. They know what they want at a high level but can't document it properly for development teams.
+
+**The Solution:** SpecLens's AI-powered spec elaboration workflow transforms rough BA notes into formal specs following industry-standard formats (GitHub Spec Kit, AWS Kiro, Google BMAD).
+
+### How It Works
+
+1. **BA provides rough notes** - Just describe the requirement at a high level
+   ```
+   "We need user login with email and password, maybe social login too"
+   ```
+
+2. **AI asks clarifying questions** - The agent probes for:
+   - Scope and boundaries
+   - User personas and use cases
+   - Success metrics
+   - Edge cases and constraints
+   - Security/performance requirements
+
+3. **AI generates formal spec.md** - Following GitHub Spec Kit format:
+   - Overview (what and why)
+   - Goals and non-goals
+   - User stories
+   - Success metrics
+   - Technical requirements
+   - Out of scope section
+
+4. **BA/Dev reviews and iterates** - Edit the spec, add details, refine with AI
+
+5. **Move to plan.md** - Generate architecture/design from the approved spec
+
+6. **Break into tasks.md** - Create incremental work items from the plan
+
+7. **Execute with CodeLens** - Click "Start Task" buttons to route to AI agent
+
+### Using the Command
+
+Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and run:
+
+```
+SpecLens: 🧠 Elaborate BA Notes → Spec
+```
+
+You'll be prompted to:
+1. Paste rough BA notes or describe the requirement
+2. Enter a feature name (e.g., `user-authentication`)
+
+The AI agent will open with a detailed prompt to create the spec. Review, iterate, and save to `specs/[feature-name]/spec.md`.
+
+**Tip:** Works with **any AI agent** - Copilot, Claude Code, or Cursor. Configure your preference in settings: `speclens.preferredAgent`
+
+---
+
 ## Quick Start
 
 ### 1. Install Dependencies

@@ -26,6 +26,7 @@ import {
   executeTask,
   viewTaskChanges,
 } from "./commands/task-lifecycle";
+import { elaborateSpec } from "./commands/elaborate-spec";
 
 let index: WorkspaceIndex;
 let treeProvider: RakdevAiTreeDataProvider;
@@ -118,6 +119,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("speclens.viewTaskChanges", (uri, taskId) =>
       viewTaskChanges(uri, taskId),
+    ),
+    vscode.commands.registerCommand("speclens.elaborateSpec", () =>
+      elaborateSpec(),
     ),
   );
 
