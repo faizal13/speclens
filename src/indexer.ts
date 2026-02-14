@@ -1,18 +1,17 @@
-import * as vscode from 'vscode';
-import yaml from 'js-yaml';
-import { FormatAdapter, ParsedDocument, DocumentType } from './formats/adapter';
-import { RakdevFormatAdapter } from './formats/rakdev-parser';
-import { SpeckitFormatAdapter } from './formats/speckit-parser';
+import * as vscode from "vscode";
+import yaml from "js-yaml";
+import { FormatAdapter, ParsedDocument, DocumentType } from "./formats/adapter";
+import { SpeckitFormatAdapter } from "./formats/speckit-parser";
 
 // Legacy type for backward compatibility
-export type FileKind = 'requirement' | 'design' | 'task';
+export type FileKind = "requirement" | "design" | "task";
 
 export interface IndexedEntry {
   id: string;
   uri: vscode.Uri;
   kind: FileKind;
   data: any;
-  format?: 'rakdev' | 'speckit';
+  format?: "rakdev" | "speckit";
   documentType?: DocumentType;
 }
 
@@ -62,22 +61,22 @@ export class WorkspaceIndex {
       kind,
       data: doc.data,
       format: doc.format,
-      documentType: doc.type
+      documentType: doc.type,
     };
   }
 
   private mapToFileKind(type: DocumentType): FileKind {
     switch (type) {
-      case 'requirement':
-      case 'spec':
-        return 'requirement';
-      case 'design':
-      case 'plan':
-        return 'design';
-      case 'task':
-        return 'task';
+      case "requirement":
+      case "spec":
+        return "requirement";
+      case "design":
+      case "plan":
+        return "design";
+      case "task":
+        return "task";
       default:
-        return 'requirement'; // Fallback for constitution, etc.
+        return "requirement"; // Fallback for constitution, etc.
     }
   }
 }
@@ -90,12 +89,7 @@ export async function indexWorkspace(): Promise<WorkspaceIndex> {
 
   const adapters: FormatAdapter[] = [];
 
-  // Detect available formats
-  const rakdevAdapter = new RakdevFormatAdapter(ws.uri);
-  if (await rakdevAdapter.detect()) {
-    adapters.push(rakdevAdapter);
-  }
-
+  // Only support Spec Kit format
   const speckitAdapter = new SpeckitFormatAdapter(ws.uri);
   if (await speckitAdapter.detect()) {
     adapters.push(speckitAdapter);
@@ -103,7 +97,7 @@ export async function indexWorkspace(): Promise<WorkspaceIndex> {
 
   const idx = new WorkspaceIndex(adapters);
 
-  // Index all documents from all detected formats
+  // Index all Spec Kit documents
   for (const adapter of adapters) {
     const files = await adapter.listDocuments();
     for (const f of files) {
@@ -115,23 +109,30 @@ export async function indexWorkspace(): Promise<WorkspaceIndex> {
 }
 
 // Legacy parsing function for backward compatibility
-async function parseLegacyFile(uri: vscode.Uri): Promise<IndexedEntry | undefined> {
+async function parseLegacyFile(
+  uri: vscode.Uri,
+): Promise<IndexedEntry | undefined> {
   try {
     const docBytes = await vscode.workspace.fs.readFile(uri);
     const text = docBytes.toString();
     const fm = parseFrontMatter(text);
     if (!fm) return undefined;
     const kind = deriveKind(uri);
-    return { id: fm.id || fm.ID || uri.path.split('/').pop()!.replace('.md', ''), uri, kind, data: fm };
+    return {
+      id: fm.id || fm.ID || uri.path.split("/").pop()!.replace(".md", ""),
+      uri,
+      kind,
+      data: fm,
+    };
   } catch {
     return undefined;
   }
 }
 
 function deriveKind(uri: vscode.Uri): FileKind {
-  if (uri.path.includes('/requirements/')) return 'requirement';
-  if (uri.path.includes('/designs/')) return 'design';
-  return 'task';
+  if (uri.path.includes("/requirements/")) return "requirement";
+  if (uri.path.includes("/designs/")) return "design";
+  return "task";
 }
 
 export function parseFrontMatter(text: string): any | undefined {

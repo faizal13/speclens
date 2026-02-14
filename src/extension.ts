@@ -53,22 +53,14 @@ export async function activate(context: vscode.ExtensionContext) {
   treeProvider = new RakdevAiTreeDataProvider(index);
   vscode.window.registerTreeDataProvider("rakdevAi.view", treeProvider);
 
-  // File watchers for both formats
-  const rakdevWatcher = vscode.workspace.createFileSystemWatcher(
-    "**/docs/{requirements,designs,tasks}/**/*.md",
-  );
-  rakdevWatcher.onDidCreate((uri) => handleChange(uri));
-  rakdevWatcher.onDidChange((uri) => handleChange(uri));
-  rakdevWatcher.onDidDelete((uri) => handleDelete(uri));
-  context.subscriptions.push(rakdevWatcher);
-
-  const speckitWatcher = vscode.workspace.createFileSystemWatcher(
+  // File watcher for Spec Kit format
+  const watcher = vscode.workspace.createFileSystemWatcher(
     "**/specs/*/{spec,plan,tasks,constitution}.md",
   );
-  speckitWatcher.onDidCreate((uri) => handleChange(uri));
-  speckitWatcher.onDidChange((uri) => handleChange(uri));
-  speckitWatcher.onDidDelete((uri) => handleDelete(uri));
-  context.subscriptions.push(speckitWatcher);
+  watcher.onDidCreate((uri) => handleChange(uri));
+  watcher.onDidChange((uri) => handleChange(uri));
+  watcher.onDidDelete((uri) => handleDelete(uri));
+  context.subscriptions.push(watcher);
 
   // Commands
   context.subscriptions.push(
@@ -157,13 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
   );
 
-  // CodeLens for both rakdev tasks and speckit tasks.md
-  context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider(
-      { language: "markdown", pattern: "**/docs/tasks/**/*.md" },
-      new RakdevAiTaskCodeLensProvider(),
-    ),
-  );
+  // CodeLens for Spec Kit tasks.md
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
       { language: "markdown", pattern: "**/specs/*/tasks.md" },
