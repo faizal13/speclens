@@ -19,19 +19,30 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 ## Features
 
+### Core Workflow
 ✅ **BA→Spec Elaboration** - Transform rough notes into formal specs with AI
 ✅ **Bug Fix Documentation** - Document production bugs with fix plans and tasks
 ✅ **Context Document Support** - Attach architecture diagrams, schemas, APIs as context
 ✅ **Microservices Support** - API contracts, events, service dependencies
-✅ **Enhanced Validation** 📊 - Spec completeness scoring, traceability, task coverage
-✅ **Validation Reports** - Interactive dashboards with health metrics and recommendations
-✅ **everything-copilot Integration** 🍒 - Specialized agents + auto-loading specs
-✅ **Intelligent Agent Routing** - @architect, @tdd, @security-reviewer (cost-optimized)
-✅ **Spec-as-Skill** - Auto-load spec context when editing related code
 ✅ **Auto-detects Spec Kit format** (`specs/[branch]/{spec,plan,tasks}.md`)
 ✅ **Agent-agnostic task routing** - Works with Copilot, Claude Code, or Cursor
 ✅ **Interactive CodeLens** - Start/Complete/Block tasks without leaving the editor
+
+### Quality & Validation
+✅ **Enhanced Validation** 📊 - Spec completeness scoring, traceability, task coverage
+✅ **Validation Reports** - Interactive dashboards with health metrics and recommendations
 ✅ **Live diagnostics** - Validates specs, plans, and tasks as you write
+
+### Premium Features ⭐
+✅ **Traceability Matrix** 🔗 - Visual requirement-to-task mapping with coverage analysis
+✅ **Kanban Task Board** 📋 - Drag-and-drop task management with real-time updates
+✅ **Spec Drift Detection** 🔍 - Detect when implementation diverges from spec
+
+### everything-copilot Integration 🍒
+✅ **Intelligent Agent Routing** - @architect, @tdd, @security-reviewer (cost-optimized)
+✅ **Spec-as-Skill** - Auto-load spec context when editing related code
+
+### Visual Enhancements
 ✅ **Tree view** - Browse all specs in your workspace
 ✅ **Status bar** - See spec/plan/task counts at a glance
 
@@ -184,6 +195,146 @@ SpecLens fully supports microservice architectures! When creating specs for micr
 - User services
 - Notification services
 - Independent bounded contexts
+
+---
+
+## 🎯 Premium Features (Phase 5)
+
+SpecLens includes three powerful premium features for advanced project management:
+
+### 1. 🔗 Traceability Matrix
+
+Visualize the complete flow from requirements to implementation with an interactive traceability matrix.
+
+**Command:** `SpecLens: 🔗 Show Traceability Matrix`
+
+**What it shows:**
+- **Requirement-to-Task Mapping**: See which tasks implement which requirements
+- **Coverage Analysis**: Identify requirements without implementing tasks
+- **Status Visualization**: Color-coded completion status per requirement
+- **Progress Metrics**: Overall completion percentage, tasks per requirement
+- **Gap Detection**: Requirements without plan components or tasks
+- **Interactive Filtering**: Filter by requirement type, status, or gaps
+
+**Example Output:**
+```
+Overall Coverage: 75%
+✅ Fully Implemented: 8 requirements
+🔄 In Progress: 3 requirements
+❌ Not Started: 1 requirement
+
+Gaps:
+- REQ-STORY-5 has no implementing tasks
+- 2 tasks not linked to requirements
+```
+
+**Use Cases:**
+- Verify all requirements are being implemented
+- Track implementation progress at the requirement level
+- Prepare for stakeholder demos
+- Identify orphaned tasks or missing implementations
+
+---
+
+### 2. 📋 Kanban Task Board
+
+Visual drag-and-drop task management board with real-time status updates.
+
+**Command:** `SpecLens: 📋 Show Kanban Board`
+
+**Features:**
+- **4-Column Layout**: Pending → In Progress → Blocked → Done
+- **Drag-and-Drop**: Move tasks between columns to update status
+- **Interactive Cards**:
+  - Task ID, title, description
+  - Time estimates and tags (API, Database, Testing, Security)
+  - Dependencies and acceptance criteria count
+  - "View Details" button to jump to task in tasks.md
+- **Real-time Metrics**:
+  - Total tasks, completed tasks
+  - Total hours, remaining hours
+  - Progress percentage
+- **Auto-save**: Status changes written back to tasks.md
+
+**Example:**
+```
+┌────────────┬────────────┬────────────┬────────────┐
+│  Pending   │ In Progress│  Blocked   │    Done    │
+│     5      │     2      │     1      │     12     │
+├────────────┼────────────┼────────────┼────────────┤
+│ Task 6     │ Task 3     │ Task 8     │ Task 1     │
+│ Database   │ API Routes │ (Waiting)  │ Setup      │
+│ 4h         │ 3h         │ 2h         │ 4h         │
+│            │            │            │            │
+│ Task 7     │ Task 4     │            │ Task 2     │
+│ Auth Logic │ Tests      │            │ Models     │
+│ 6h         │ 3h         │            │ 3h         │
+└────────────┴────────────┴────────────┴────────────┘
+
+Progress: 70% | Remaining: 22 hours
+```
+
+**Use Cases:**
+- Daily standups and sprint planning
+- Visualize work distribution
+- Identify blockers quickly
+- Track task dependencies
+
+---
+
+### 3. 🔍 Spec Drift Detection
+
+Detect when your implementation has diverged from the approved specification.
+
+**Command:** `SpecLens: 🔍 Detect Spec Drift`
+
+**How it works:**
+1. Analyzes your spec.md for requirements, APIs, data models, security needs
+2. Scans your codebase (you specify the path, e.g., `src/auth/`)
+3. Compares implementation against spec
+4. Reports discrepancies with severity levels
+
+**What it detects:**
+
+| Issue Category | Description | Example |
+|----------------|-------------|---------|
+| **Extra Implementation** | Code not in spec | API endpoint `POST /api/admin/delete-user` exists but not documented |
+| **Missing Implementation** | Spec requirement not coded | Spec requires CSRF protection but no `csrf` code found |
+| **API Contract Drift** | Undocumented endpoints | Found `GET /api/v2/users` but spec only lists v1 |
+| **Data Model Drift** | Undocumented models | `PaymentMethod` interface exists but not in spec |
+| **Security Gaps** | Missing security code | Spec requires bcrypt but no password hashing found |
+| **Feature Mismatch** | Implementation differs | Spec says JWT but code uses sessions |
+
+**Drift Score:**
+- **0-20**: ✅ Excellent alignment
+- **21-40**: 👍 Good alignment, minor drift
+- **41-60**: ⚠️ Moderate drift
+- **61-80**: 🚨 Significant drift
+- **81-100**: ❌ Critical drift - realignment needed
+
+**Example Output:**
+```
+Drift Score: 35 (Good alignment, minor drift)
+
+Scanned: 12 files in src/auth/
+
+Issues Found: 4
+├─ 🔒 1 Critical: Missing CSRF protection
+├─ 🌐 2 Medium: Undocumented API endpoints
+└─ 📊 1 Low: PaymentMethod interface not in spec
+
+Recommendations:
+💡 Add CSRF token validation as specified in spec.md
+💡 Document POST /api/auth/refresh in spec API contracts
+💡 Add PaymentMethod to spec data models section
+```
+
+**Use Cases:**
+- Pre-deployment validation
+- Code review preparation
+- Onboarding (detect legacy drift)
+- Security audits
+- Refactoring planning
 
 ---
 
@@ -712,12 +863,13 @@ SpecLens is the **only** VS Code extension that brings IDE-level support to Spec
 
 ## Roadmap
 
+- [x] **Phase 0**: Foundation (GitHub repo, rename to SpecLens)
 - [x] **Phase 1**: Modular architecture refactor
 - [x] **Phase 2**: Spec Kit format adapter
 - [x] **Phase 3**: Agent-agnostic task routing
-- [ ] **Phase 4**: VS Code Marketplace publish
-- [ ] **Phase 5**: Traceability matrix webview
-- [ ] **Phase 6**: Spec drift detection
+- [x] **Phase 4**: Enhanced validation (spec scoring, traceability, task coverage)
+- [x] **Phase 5**: Premium features (traceability matrix, kanban board, drift detection)
+- [ ] **Phase 6**: VS Code Marketplace publish
 
 ---
 

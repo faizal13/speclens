@@ -32,6 +32,9 @@ import { generateTasksFromPlan } from "./commands/generate-tasks";
 import { documentBugFix } from "./commands/document-bugfix";
 import { createSkillFromSpec } from "./commands/create-skill";
 import { showValidationReport } from "./commands/show-validation-report";
+import { showTraceabilityMatrix } from "./commands/show-traceability-matrix";
+import { showKanbanBoard } from "./commands/show-kanban-board";
+import { detectSpecDrift } from "./commands/detect-spec-drift";
 
 let index: WorkspaceIndex;
 let treeProvider: RakdevAiTreeDataProvider;
@@ -142,6 +145,15 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("speclens.showValidationReport", () =>
       showValidationReport(),
+    ),
+    vscode.commands.registerCommand("speclens.showTraceabilityMatrix", () =>
+      showTraceabilityMatrix(),
+    ),
+    vscode.commands.registerCommand("speclens.showKanbanBoard", () =>
+      showKanbanBoard(),
+    ),
+    vscode.commands.registerCommand("speclens.detectSpecDrift", () =>
+      detectSpecDrift(),
     ),
   );
 
