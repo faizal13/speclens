@@ -34,7 +34,7 @@ export async function startTask(
   taskId: string,
   handleChange: HandleChangeFn,
 ) {
-  await updateTaskStatus(uri, "in-progress", handleChange);
+  await updateTaskStatus(uri, "in-progress", handleChange, taskId);
 
   const doc = await vscode.workspace.openTextDocument(uri);
   const text = doc.getText();
@@ -140,7 +140,7 @@ export async function completeTask(
   );
 
   if (confirm === "Yes") {
-    await updateTaskStatus(uri, "done", handleChange);
+    await updateTaskStatus(uri, "done", handleChange, taskId);
     vscode.window.showInformationMessage(
       `🎉 Task ${taskId} completed! Status: done`,
     );
@@ -158,7 +158,7 @@ export async function blockTask(
   });
 
   if (reason !== undefined) {
-    await updateTaskStatus(uri, "blocked", handleChange);
+    await updateTaskStatus(uri, "blocked", handleChange, taskId);
 
     const doc = await vscode.workspace.openTextDocument(uri);
     const timestamp = new Date().toISOString();
@@ -177,7 +177,7 @@ export async function reopenTask(
   taskId: string,
   handleChange: HandleChangeFn,
 ) {
-  await updateTaskStatus(uri, "in-progress", handleChange);
+  await updateTaskStatus(uri, "in-progress", handleChange, taskId);
   vscode.window.showInformationMessage(
     `🔄 Task ${taskId} reopened! Status: in-progress`,
   );
@@ -188,7 +188,7 @@ export async function unblockTask(
   taskId: string,
   handleChange: HandleChangeFn,
 ) {
-  await updateTaskStatus(uri, "in-progress", handleChange);
+  await updateTaskStatus(uri, "in-progress", handleChange, taskId);
   vscode.window.showInformationMessage(
     `✅ Task ${taskId} unblocked! Status: in-progress`,
   );
@@ -238,13 +238,71 @@ Use git history and file search to track all changes for this task.`;
   }
 }
 
+/**
+ * Update task status in Spec Kit format tasks.md
+ */
+async function updateSpecKitTaskStatus(
+  uri: vscode.Uri,
+  taskId: string,
+  newStatus: string,
+  handleChange: HandleChangeFn
+): Promise<void> {
+  const doc = await vscode.workspace.openTextDocument(uri);
+  let text = doc.getText();
+
+  const taskNum = taskId.replace('TASK-', '');
+  const taskRegex = new RegExp(`(## Task ${taskNum}:[\\s\\S]*?\\*\\*Status:\\*\\*)\\s*(Pending|In Progress|Blocked|Done|TODO|IN-PROGRESS|COMPLETED)`, 'i');
+
+  // Map status to format used in tasks.md
+  const statusMap: Record<string, string> = {
+    'pending': 'Pending',
+    'in-progress': 'In Progress',
+    'blocked': 'Blocked',
+    'done': 'Done',
+    'todo': 'Pending'
+  };
+
+  const newStatusFormatted = statusMap[newStatus] || newStatus;
+
+  if (taskRegex.test(text)) {
+    text = text.replace(taskRegex, `$1 ${newStatusFormatted}`);
+
+    const edit = new vscode.WorkspaceEdit();
+    const fullRange = new vscode.Range(
+      doc.positionAt(0),
+      doc.positionAt(doc.getText().length)
+    );
+    edit.replace(uri, fullRange, text);
+
+    await vscode.workspace.applyEdit(edit);
+    await doc.save();
+    await handleChange(uri);
+
+    vscode.window.showInformationMessage(`Task ${taskNum} status updated to: ${newStatusFormatted}`);
+  } else {
+    vscode.window.showErrorMessage(`Could not find Task ${taskNum} or Status field`);
+  }
+}
+
 async function updateTaskStatus(
   uri: vscode.Uri,
   newStatus: string,
   handleChange: HandleChangeFn,
+  taskId?: string
 ) {
   const doc = await vscode.workspace.openTextDocument(uri);
   const text = doc.getText();
+
+  // Check if this is Spec Kit format (specs/*/tasks.md)
+  if (uri.fsPath.includes('/specs/') && uri.fsPath.endsWith('/tasks.md')) {
+    if (!taskId) {
+      vscode.window.showErrorMessage("TaskId is required for Spec Kit format");
+      return;
+    }
+    return updateSpecKitTaskStatus(uri, taskId, newStatus, handleChange);
+  }
+
+  // Legacy RakDev format: YAML front-matter
   const fmMatch = /^---\n([\s\S]*?)\n---/m.exec(text);
 
   if (!fmMatch) {
