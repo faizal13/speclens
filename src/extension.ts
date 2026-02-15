@@ -30,6 +30,7 @@ import { elaborateSpec } from "./commands/elaborate-spec";
 import { generatePlanFromSpec } from "./commands/generate-plan";
 import { generateTasksFromPlan } from "./commands/generate-tasks";
 import { documentBugFix } from "./commands/document-bugfix";
+import { createSkillFromSpec } from "./commands/create-skill";
 
 let index: WorkspaceIndex;
 let treeProvider: RakdevAiTreeDataProvider;
@@ -134,6 +135,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("speclens.documentBugFix", () =>
       documentBugFix(),
+    ),
+    vscode.commands.registerCommand("speclens.createSkill", () =>
+      createSkillFromSpec(),
     ),
   );
 
