@@ -75,12 +75,29 @@ export async function generatePlanFromSpec(): Promise<void> {
     // File doesn't exist, continue
   }
 
-  // Step 6: Build AI prompt for plan generation
-  const prompt = buildPlanPrompt(specText, featureName);
+  // Step 6: Check for context folder and read context files
+  const contextUri = vscode.Uri.file(path.join(featureFolder, 'context'));
+  let contextFiles: string[] = [];
+  try {
+    const files = await vscode.workspace.fs.readDirectory(contextUri);
+    for (const [fileName, fileType] of files) {
+      if (fileType === vscode.FileType.File) {
+        const fileUri = vscode.Uri.file(path.join(contextUri.fsPath, fileName));
+        const content = await vscode.workspace.fs.readFile(fileUri);
+        const textContent = Buffer.from(content).toString('utf8');
+        contextFiles.push(`--- ${fileName} ---\n${textContent.substring(0, 2000)}\n`);
+      }
+    }
+  } catch {
+    // No context folder, continue without it
+  }
 
-  // Step 7: Route to AI agent
+  // Step 7: Build AI prompt for plan generation
+  const prompt = buildPlanPrompt(specText, featureName, contextFiles);
+
+  // Step 8: Route to AI agent
   vscode.window.showInformationMessage(
-    `🏗️ Generating implementation plan for "${featureName}"...`
+    `🏗️ Generating implementation plan for "${featureName}"${contextFiles.length > 0 ? ` with ${contextFiles.length} context docs` : ''}...`
   );
 
   const success = await routeToAgent(prompt);
@@ -95,7 +112,11 @@ export async function generatePlanFromSpec(): Promise<void> {
 /**
  * Build the AI prompt for plan generation
  */
-function buildPlanPrompt(specText: string, featureName: string): string {
+function buildPlanPrompt(specText: string, featureName: string, contextFiles: string[] = []): string {
+  const contextSection = contextFiles.length > 0
+    ? `\n\n**ADDITIONAL CONTEXT DOCUMENTS:**\nThe following context documents are available to help you understand existing architecture and constraints:\n\n${contextFiles.join('\n')}\n\n**Use these documents to:**\n- Align with existing architecture patterns\n- Respect current tech stack and dependencies\n- Identify integration points\n- Follow established conventions\n\n`
+    : '';
+
   return `You are a software architect helping to create an implementation plan from an approved specification.
 
 **CONTEXT:**
@@ -109,6 +130,7 @@ The team has approved a spec.md for "${featureName}". Your job is to:
 \`\`\`markdown
 ${specText}
 \`\`\`
+${contextSection}
 
 **YOUR TASK:**
 Create a comprehensive plan.md following GitHub Spec Kit format:
@@ -120,6 +142,13 @@ Create a comprehensive plan.md following GitHub Spec Kit format:
 [High-level architecture diagram or description]
 [System components and how they interact]
 [Data flow: user request → frontend → API → database → response]
+
+**Microservices Context (if applicable):**
+- Service boundaries and responsibilities
+- Inter-service communication (REST APIs, gRPC, message queues)
+- Service discovery and load balancing
+- API gateway routing
+- Event bus topology (if using events)
 
 ## Tech Stack
 ### Frontend
@@ -236,9 +265,11 @@ interface SignupResponse {
 ## Testing Strategy
 - Unit tests: Password hashing, token generation, validation
 - Integration tests: API endpoints with test database
+- Contract tests: API contract verification (Pact, OpenAPI validation) **[Required for microservices]**
 - E2E tests: Signup flow, login flow, password reset
 - Load tests: 1000 concurrent users (Artillery)
 - Security tests: OWASP Top 10 checks
+- Event testing: Verify published/consumed events **[Required for microservices]**
 
 ## Implementation Phases
 

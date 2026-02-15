@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { routeTaskToAgent } from '../agents/router';
 
 /**
@@ -32,10 +33,43 @@ export async function elaborateSpec(): Promise<void> {
     return; // User cancelled
   }
 
-  // Step 2: Get feature/branch name for the spec
+  // Step 2: Ask if this is for a microservice
+  const isMicroservice = await vscode.window.showQuickPick([
+    { label: 'Microservice Feature', description: 'Feature for a specific microservice (has APIs, events, dependencies)', value: true },
+    { label: 'Monolith/General Feature', description: 'Regular feature in a monolithic app', value: false }
+  ], {
+    placeHolder: 'Is this feature for a microservice?',
+    ignoreFocusOut: true
+  });
+
+  if (!isMicroservice) {
+    return; // User cancelled
+  }
+
+  let serviceName = '';
+  if (isMicroservice.value) {
+    // Step 2a: Get microservice name
+    serviceName = await vscode.window.showInputBox({
+      prompt: 'Enter microservice name (e.g., payment-service, user-service)',
+      placeHolder: 'e.g., payment-service',
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        if (!value || !/^[a-z0-9-]+$/.test(value)) {
+          return 'Use lowercase letters, numbers, and dashes only';
+        }
+        return undefined;
+      }
+    }) || '';
+
+    if (!serviceName) {
+      return; // User cancelled
+    }
+  }
+
+  // Step 3: Get feature/branch name for the spec
   const featureName = await vscode.window.showInputBox({
-    prompt: 'Enter a short feature name (will be used for folder name)',
-    placeHolder: 'e.g., user-authentication',
+    prompt: `Enter a short feature name ${isMicroservice.value ? `for ${serviceName}` : ''}`,
+    placeHolder: isMicroservice.value ? `e.g., ${serviceName}-stripe-integration` : 'e.g., user-authentication',
     ignoreFocusOut: true,
     validateInput: (value) => {
       if (!value || !/^[a-z0-9-]+$/.test(value)) {
@@ -49,7 +83,7 @@ export async function elaborateSpec(): Promise<void> {
     return; // User cancelled
   }
 
-  // Step 3: Check if specs folder exists, create if not
+  // Step 4: Check if specs folder exists, create if not
   const specsUri = vscode.Uri.joinPath(ws.uri, 'specs');
   try {
     await vscode.workspace.fs.stat(specsUri);
@@ -72,18 +106,63 @@ export async function elaborateSpec(): Promise<void> {
     await vscode.workspace.fs.createDirectory(featureUri);
   }
 
-  // Step 5: Create spec.md path
+  // Step 5: Ask if user wants to attach context documents
+  const attachContext = await vscode.window.showQuickPick([
+    { label: 'Yes', description: 'Attach existing docs (architecture, schemas, APIs, etc.)', value: true },
+    { label: 'No', description: 'Just use rough notes', value: false }
+  ], {
+    placeHolder: 'Do you have additional context documents? (architecture diagrams, schemas, etc.)',
+    ignoreFocusOut: true
+  });
+
+  let contextFiles: vscode.Uri[] = [];
+  if (attachContext && attachContext.value) {
+    // Step 5a: File picker for context documents
+    const selectedFiles = await vscode.window.showOpenDialog({
+      canSelectMany: true,
+      canSelectFiles: true,
+      canSelectFolders: false,
+      openLabel: 'Attach Context',
+      title: 'Select context documents (PDFs, diagrams, schemas, docs)',
+      filters: {
+        'Documents': ['pdf', 'md', 'txt', 'json', 'yaml', 'yml', 'sql'],
+        'Images': ['png', 'jpg', 'jpeg', 'svg', 'gif'],
+        'Code': ['ts', 'js', 'py', 'go', 'java', 'prisma'],
+        'All': ['*']
+      }
+    });
+
+    if (selectedFiles && selectedFiles.length > 0) {
+      contextFiles = selectedFiles;
+
+      // Step 5b: Create context/ subfolder and copy files there
+      const contextUri = vscode.Uri.joinPath(featureUri, 'context');
+      await vscode.workspace.fs.createDirectory(contextUri);
+
+      for (const file of contextFiles) {
+        const fileName = path.basename(file.fsPath);
+        const destUri = vscode.Uri.joinPath(contextUri, fileName);
+        await vscode.workspace.fs.copy(file, destUri, { overwrite: true });
+      }
+
+      vscode.window.showInformationMessage(
+        `📎 ${contextFiles.length} context file(s) copied to specs/${featureName}/context/`
+      );
+    }
+  }
+
+  // Step 6: Create spec.md path
   const specUri = vscode.Uri.joinPath(featureUri, 'spec.md');
 
-  // Step 6: Build AI prompt for spec elaboration
-  const prompt = buildElaborationPrompt(roughNotes, featureName);
+  // Step 7: Build AI prompt for spec elaboration (with context if provided)
+  const prompt = await buildElaborationPrompt(roughNotes, featureName, contextFiles, isMicroservice.value, serviceName);
 
-  // Step 7: Show progress and open the AI agent
+  // Step 8: Show progress and open the AI agent
   vscode.window.showInformationMessage(
-    `🤖 Starting spec elaboration for "${featureName}"...`
+    `🤖 Starting spec elaboration for "${featureName}"${contextFiles.length > 0 ? ` with ${contextFiles.length} context docs` : ''}...`
   );
 
-  // Step 8: Route to AI agent (Copilot/Claude/Cursor)
+  // Step 9: Route to AI agent (Copilot/Claude/Cursor)
   // Note: We use a simplified task context since this is spec creation, not task execution
   const success = await routeToAgent(prompt);
 
@@ -97,7 +176,62 @@ export async function elaborateSpec(): Promise<void> {
 /**
  * Build the AI prompt for spec elaboration
  */
-function buildElaborationPrompt(roughNotes: string, featureName: string): string {
+async function buildElaborationPrompt(
+  roughNotes: string,
+  featureName: string,
+  contextFiles: vscode.Uri[] = [],
+  isMicroservice: boolean = false,
+  serviceName: string = ''
+): Promise<string> {
+  // Read context files if provided
+  let contextSection = '';
+  if (contextFiles.length > 0) {
+    contextSection = '\n\n**ADDITIONAL CONTEXT DOCUMENTS:**\n';
+    contextSection += 'The BA has provided the following context documents. Use them to understand existing architecture, constraints, and patterns:\n\n';
+
+    for (const fileUri of contextFiles) {
+      const fileName = path.basename(fileUri.fsPath);
+      const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
+
+      try {
+        // Read file content
+        const content = await vscode.workspace.fs.readFile(fileUri);
+        const textContent = Buffer.from(content).toString('utf8');
+
+        // Truncate if too large (max 2000 chars per file)
+        const truncated = textContent.length > 2000
+          ? textContent.substring(0, 2000) + '\n\n[... truncated, file too large ...]'
+          : textContent;
+
+        contextSection += `--- ${fileName} ---\n`;
+
+        // Add context based on file type
+        if (['.json', '.yaml', '.yml'].includes(fileExtension)) {
+          contextSection += `(API schema/config)\n\`\`\`${fileExtension.slice(1)}\n${truncated}\n\`\`\`\n\n`;
+        } else if (['.sql', '.prisma'].includes(fileExtension)) {
+          contextSection += `(Database schema)\n\`\`\`sql\n${truncated}\n\`\`\`\n\n`;
+        } else if (['.md', '.txt'].includes(fileExtension)) {
+          contextSection += `${truncated}\n\n`;
+        } else if (['.ts', '.js', '.py', '.go', '.java'].includes(fileExtension)) {
+          contextSection += `(Code reference)\n\`\`\`${fileExtension.slice(1)}\n${truncated}\n\`\`\`\n\n`;
+        } else if (['.png', '.jpg', '.jpeg', '.svg', '.gif'].includes(fileExtension)) {
+          contextSection += `(Image: ${fileName} - architecture diagram or UI mockup)\n\n`;
+        } else {
+          contextSection += `${truncated}\n\n`;
+        }
+      } catch (e) {
+        contextSection += `(Unable to read file: ${fileName})\n\n`;
+      }
+    }
+
+    contextSection += '**IMPORTANT:** Use the context documents to:\n';
+    contextSection += '- Align with existing architecture patterns\n';
+    contextSection += '- Respect current database schema\n';
+    contextSection += '- Follow existing API conventions\n';
+    contextSection += '- Identify integration points with existing systems\n';
+    contextSection += '- Avoid reinventing what already exists\n\n';
+  }
+
   return `You are a Business Analyst assistant helping to create a formal specification from rough notes.
 
 **CONTEXT:**
@@ -110,6 +244,7 @@ A BA has provided rough, high-level notes about a requirement. Your job is to:
 ${roughNotes}
 
 **FEATURE NAME:** ${featureName}
+${contextSection}
 
 **YOUR TASK:**
 Create a comprehensive spec.md following this structure:
@@ -117,7 +252,22 @@ Create a comprehensive spec.md following this structure:
 \`\`\`markdown
 # ${featureName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
 
-## Overview
+${isMicroservice ? `## Service Context
+**Service:** ${serviceName}
+**Type:** Microservice feature
+**Responsibility:** [What is this service responsible for in the overall system]
+
+## Service Dependencies
+### Upstream Services (this service depends on)
+- [Service Name]: [Why/what data/APIs we consume]
+
+### Downstream Services (depend on this service)
+- [Service Name]: [What they consume from us]
+
+### External Dependencies
+- [Third-party API, e.g., Stripe, SendGrid]
+
+` : ''}## Overview
 [2-3 sentences describing what this feature is and why it's needed]
 
 ## Goals
@@ -143,7 +293,41 @@ Create a comprehensive spec.md following this structure:
 - Security: [requirements]
 - Scalability: [needs]
 
-### Constraints
+${isMicroservice ? `### API Contract
+**New Endpoints:**
+| Method | Path | Description | Auth | Request | Response |
+|--------|------|-------------|------|---------|----------|
+| POST | /api/resource | Create resource | Required | \`CreateResourceRequest\` | \`ResourceResponse\` |
+| GET | /api/resource/:id | Get resource | Required | - | \`ResourceResponse\` |
+
+**Request/Response Types:**
+\`\`\`typescript
+interface CreateResourceRequest {
+  name: string;
+  // ...
+}
+
+interface ResourceResponse {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+\`\`\`
+
+### Events Published
+- \`resource.created\`: Published when resource is created
+  \`\`\`json
+  {
+    "eventType": "resource.created",
+    "resourceId": "uuid",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+  \`\`\`
+
+### Events Consumed
+- \`other-service.event\`: What we do when we receive this event
+
+` : ''}### Constraints
 - [Technical constraints]
 - [Business constraints]
 - [Timeline constraints]

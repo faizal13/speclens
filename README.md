@@ -19,6 +19,10 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 ## Features
 
+✅ **BA→Spec Elaboration** - Transform rough notes into formal specs with AI
+✅ **Bug Fix Documentation** - Document production bugs with fix plans and tasks
+✅ **Context Document Support** - Attach architecture diagrams, schemas, APIs as context
+✅ **Microservices Support** - API contracts, events, service dependencies
 ✅ **Auto-detects Spec Kit format** (`specs/[branch]/{spec,plan,tasks}.md`)
 ✅ **Agent-agnostic task routing** - Works with Copilot, Claude Code, or Cursor
 ✅ **Interactive CodeLens** - Start/Complete/Block tasks without leaving the editor
@@ -72,15 +76,26 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 ### Using the Commands
 
-#### 1. Elaborate BA Notes → Spec
+#### 1. Elaborate BA Notes → Spec (with Context Documents)
 Open Command Palette (`Cmd+Shift+P`) and run:
 ```
 SpecLens: 🧠 Elaborate BA Notes → Spec
 ```
 - Paste rough BA notes
+- Choose microservice or monolith
 - Enter feature name (e.g., `user-authentication`)
-- AI generates complete spec.md
+- **Optional:** Attach context documents (architecture diagrams, API docs, database schemas)
+- AI generates complete spec.md (with API contracts for microservices)
 - Save to `specs/[feature-name]/spec.md`
+
+**Context Documents:**
+- Architecture diagrams (PNG, SVG)
+- Database schemas (SQL, Prisma)
+- API documentation (JSON, YAML, OpenAPI)
+- Existing code (TS, JS, Python)
+- Any relevant docs (PDF, MD, TXT)
+
+Files are copied to `specs/[feature]/context/` and auto-loaded in subsequent commands.
 
 #### 2. Generate Plan from Spec
 After creating spec.md, run:
@@ -101,13 +116,69 @@ SpecLens: 📋 Generate Tasks from Plan
 - Each task has acceptance criteria and dependencies
 - Save to `specs/[feature-name]/tasks.md`
 
-#### 4. Execute Tasks with CodeLens
+#### 4. Document Bug Fixes (NEW! 🐛)
+For production bugs, run:
+```
+SpecLens: 🐛 Document Bug & Create Fix Plan
+```
+- Describe the bug
+- Select severity (Critical/High/Medium/Low)
+- Add reproduction steps and error messages
+- AI generates:
+  - `spec.md`: Bug analysis, root cause, impact assessment
+  - `plan.md`: Investigation steps, fix approach, rollback plan
+  - `tasks.md`: 7 focused tasks (reproduce, debug, fix, test, deploy, monitor)
+- Save to `specs/bugfix-YYYY-XXXX/`
+
+**Perfect for:**
+- Production incidents
+- Critical hotfixes
+- Regression bugs
+- User-reported issues
+
+#### 5. Execute Tasks with CodeLens
 Open `tasks.md` and click CodeLens buttons:
 - **Start Task** - Opens AI agent with task context
 - **Complete Task** - Marks task as done
 - **Block Task** - Flags blockers
 
 **Tip:** Works with **any AI agent** - Copilot, Claude Code, or Cursor. Configure your preference in settings: `speclens.preferredAgent`
+
+---
+
+## 🔧 Microservices Support
+
+SpecLens fully supports microservice architectures! When creating specs for microservices:
+
+**Enhanced Spec Template Includes:**
+- **Service Context**: Service name, responsibilities, boundaries
+- **Service Dependencies**: Upstream/downstream services, external APIs
+- **API Contracts**: Endpoint specs with request/response types
+- **Event Schemas**: Published and consumed events with JSON schemas
+- **Inter-Service Communication**: REST, gRPC, message queues
+
+**Example Workflow:**
+1. Run `SpecLens: 🧠 Elaborate BA Notes → Spec`
+2. Select "Microservice Feature"
+3. Enter service name: `payment-service`
+4. Enter feature: `payment-service-stripe-integration`
+5. AI generates spec with:
+   - API contract (POST /api/payments/create)
+   - Events (payment.created, payment.failed)
+   - Dependencies (User Service, Order Service)
+   - Stripe integration points
+
+**Plan.md Additions:**
+- Service discovery and load balancing
+- API gateway routing
+- Event bus topology
+- Contract testing strategy (Pact, OpenAPI validation)
+
+**Best for:**
+- Payment services
+- User services
+- Notification services
+- Independent bounded contexts
 
 ---
 
