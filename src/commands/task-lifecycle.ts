@@ -14,18 +14,18 @@ export type HandleChangeFn = (uri: vscode.Uri) => Promise<void>;
 
 export async function changeTaskStatus(
   uri: vscode.Uri,
-  _taskId: string,
+  taskId: string,
   currentStatus: string,
   handleChange: HandleChangeFn,
 ) {
   const options = ["todo", "in-progress", "blocked", "done"];
   const newStatus = await vscode.window.showQuickPick(options, {
     placeHolder: `Change status from '${currentStatus}' to:`,
-    title: `Task ${_taskId}`,
+    title: `Task ${taskId}`,
   });
 
   if (newStatus && newStatus !== currentStatus) {
-    await updateTaskStatus(uri, newStatus, handleChange);
+    await updateTaskStatus(uri, newStatus, handleChange, taskId);
   }
 }
 
@@ -38,28 +38,30 @@ export async function startTask(
 
   const doc = await vscode.workspace.openTextDocument(uri);
   const text = doc.getText();
-  const fm = parseFrontMatter(text);
+  const lines = text.split(/\r?\n/);
 
-  const reqId = fm.requirement || "unknown";
-  const designId = fm.design || "unknown";
-  const taskTitle = text.match(/^# Task: (.+)$/m)?.[1] || taskId;
+  // Check if this is Spec Kit format
+  const isSpecKit = uri.fsPath.includes('/specs/') && uri.fsPath.endsWith('/tasks.md');
 
+  let reqId = "unknown";
+  let designId = "unknown";
+  let taskTitle = taskId;
   let taskContent = text;
-  if (taskId.includes("-T")) {
-    const lines = text.split(/\r?\n/);
-    const taskNumber = taskId.split("-T")[1];
-    const taskStartPattern = new RegExp(
-      `^###\\s+Task\\s+${taskNumber}:\\s+`,
-      "i",
-    );
+
+  if (isSpecKit) {
+    // Spec Kit format: Extract task content from ## Task N:
+    const taskNum = taskId.replace('TASK-', '');
+    const taskPattern = new RegExp(`^##\\s+Task\\s+${taskNum}:\\s*(.+)$`, 'i');
 
     let startIdx = -1;
     let endIdx = lines.length;
 
     for (let i = 0; i < lines.length; i++) {
-      if (taskStartPattern.test(lines[i])) {
+      const titleMatch = lines[i].match(taskPattern);
+      if (titleMatch) {
         startIdx = i;
-      } else if (startIdx >= 0 && /^###\s+Task\s+\d+:/i.test(lines[i])) {
+        taskTitle = titleMatch[1];
+      } else if (startIdx >= 0 && /^##\s+Task\s+\d+:/i.test(lines[i])) {
         endIdx = i;
         break;
       }
@@ -67,6 +69,42 @@ export async function startTask(
 
     if (startIdx >= 0) {
       taskContent = lines.slice(startIdx, endIdx).join("\n");
+    }
+
+    // For Spec Kit, reqId and designId are not in front-matter
+    // They're derived from the feature folder structure
+    const featureName = path.basename(path.dirname(uri.fsPath));
+    reqId = `spec-${featureName}`;
+    designId = `plan-${featureName}`;
+  } else {
+    // Legacy RakDev format: YAML front-matter
+    const fm = parseFrontMatter(text);
+    reqId = fm.requirement || "unknown";
+    designId = fm.design || "unknown";
+    taskTitle = text.match(/^# Task: (.+)$/m)?.[1] || taskId;
+
+    if (taskId.includes("-T")) {
+      const taskNumber = taskId.split("-T")[1];
+      const taskStartPattern = new RegExp(
+        `^###\\s+Task\\s+${taskNumber}:\\s+`,
+        "i",
+      );
+
+      let startIdx = -1;
+      let endIdx = lines.length;
+
+      for (let i = 0; i < lines.length; i++) {
+        if (taskStartPattern.test(lines[i])) {
+          startIdx = i;
+        } else if (startIdx >= 0 && /^###\s+Task\s+\d+:/i.test(lines[i])) {
+          endIdx = i;
+          break;
+        }
+      }
+
+      if (startIdx >= 0) {
+        taskContent = lines.slice(startIdx, endIdx).join("\n");
+      }
     }
   }
 
@@ -197,17 +235,56 @@ export async function unblockTask(
 export async function executeTask(uri: vscode.Uri, taskId: string) {
   const doc = await vscode.workspace.openTextDocument(uri);
   const text = doc.getText();
-  const fm = parseFrontMatter(text);
+  const lines = text.split(/\r?\n/);
 
-  const reqId = fm.requirement || "unknown";
-  const designId = fm.design || "unknown";
-  const taskTitle = text.match(/^# Task: (.+)$/m)?.[1] || taskId;
+  // Check if this is Spec Kit format
+  const isSpecKit = uri.fsPath.includes('/specs/') && uri.fsPath.endsWith('/tasks.md');
+
+  let reqId = "unknown";
+  let designId = "unknown";
+  let taskTitle = taskId;
+  let taskContent = text;
+
+  if (isSpecKit) {
+    // Spec Kit format: Extract task content from ## Task N:
+    const taskNum = taskId.replace('TASK-', '');
+    const taskPattern = new RegExp(`^##\\s+Task\\s+${taskNum}:\\s*(.+)$`, 'i');
+
+    let startIdx = -1;
+    let endIdx = lines.length;
+
+    for (let i = 0; i < lines.length; i++) {
+      const titleMatch = lines[i].match(taskPattern);
+      if (titleMatch) {
+        startIdx = i;
+        taskTitle = titleMatch[1];
+      } else if (startIdx >= 0 && /^##\s+Task\s+\d+:/i.test(lines[i])) {
+        endIdx = i;
+        break;
+      }
+    }
+
+    if (startIdx >= 0) {
+      taskContent = lines.slice(startIdx, endIdx).join("\n");
+    }
+
+    // For Spec Kit, derive reqId/designId from feature folder
+    const featureName = path.basename(path.dirname(uri.fsPath));
+    reqId = `spec-${featureName}`;
+    designId = `plan-${featureName}`;
+  } else {
+    // Legacy RakDev format: YAML front-matter
+    const fm = parseFrontMatter(text);
+    reqId = fm.requirement || "unknown";
+    designId = fm.design || "unknown";
+    taskTitle = text.match(/^# Task: (.+)$/m)?.[1] || taskId;
+  }
 
   // Route to active AI agent (help mode)
   await routeTaskToAgent({
     taskId,
     taskTitle,
-    taskContent: text,
+    taskContent,
     requirementId: reqId,
     designId: designId,
     mode: "help",
