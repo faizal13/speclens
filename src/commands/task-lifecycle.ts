@@ -1,6 +1,14 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { parseFrontMatter, WorkspaceIndex } from "../indexer";
 import { routeTaskToAgent, TaskContext } from "../agents/router";
+import {
+  isEverythingCopilotAvailable,
+  routeToEverythingCopilot,
+  detectTaskType,
+  getAgentInfo,
+  suggestEverythingCopilot
+} from "../agents/everything-copilot-router";
 
 export type HandleChangeFn = (uri: vscode.Uri) => Promise<void>;
 
@@ -62,15 +70,62 @@ export async function startTask(
     }
   }
 
-  // Route to active AI agent
-  await routeTaskToAgent({
-    taskId,
-    taskTitle,
-    taskContent,
-    requirementId: reqId,
-    designId: designId,
-    mode: "implement",
-  });
+  // Extract acceptance criteria from task content
+  const acceptanceCriteria: string[] = [];
+  const criteriaRegex = /- \[ \] (.+)/g;
+  let match;
+  while ((match = criteriaRegex.exec(taskContent)) !== null) {
+    acceptanceCriteria.push(match[1]);
+  }
+
+  // Check if everything-copilot is available
+  const hasEverythingCopilot = await isEverythingCopilotAvailable();
+
+  if (hasEverythingCopilot) {
+    // Route to specialized everything-copilot agent
+    // Read spec.md and plan.md for context
+    const featureFolder = path.dirname(uri.fsPath);
+    let spec: string | undefined;
+    let plan: string | undefined;
+
+    try {
+      const specUri = vscode.Uri.file(path.join(featureFolder, 'spec.md'));
+      const specContent = await vscode.workspace.fs.readFile(specUri);
+      spec = Buffer.from(specContent).toString('utf8');
+    } catch {
+      // spec.md not found, continue without it
+    }
+
+    try {
+      const planUri = vscode.Uri.file(path.join(featureFolder, 'plan.md'));
+      const planContent = await vscode.workspace.fs.readFile(planUri);
+      plan = Buffer.from(planContent).toString('utf8');
+    } catch {
+      // plan.md not found, continue without it
+    }
+
+    await routeToEverythingCopilot({
+      taskId,
+      taskTitle,
+      taskContent,
+      acceptanceCriteria,
+      requirementId: reqId,
+      designId: designId
+    }, spec, plan);
+  } else {
+    // Fallback to regular agent routing
+    await routeTaskToAgent({
+      taskId,
+      taskTitle,
+      taskContent,
+      requirementId: reqId,
+      designId: designId,
+      mode: "implement",
+    });
+
+    // Suggest installing everything-copilot
+    await suggestEverythingCopilot();
+  }
 }
 
 export async function completeTask(

@@ -26,6 +26,11 @@ import {
   executeTask,
   viewTaskChanges,
 } from "./commands/task-lifecycle";
+import { elaborateSpec } from "./commands/elaborate-spec";
+import { generatePlanFromSpec } from "./commands/generate-plan";
+import { generateTasksFromPlan } from "./commands/generate-tasks";
+import { documentBugFix } from "./commands/document-bugfix";
+import { createSkillFromSpec } from "./commands/create-skill";
 
 let index: WorkspaceIndex;
 let treeProvider: RakdevAiTreeDataProvider;
@@ -51,7 +56,7 @@ async function handleDelete(uri: vscode.Uri) {
 export async function activate(context: vscode.ExtensionContext) {
   index = await indexWorkspace();
   treeProvider = new RakdevAiTreeDataProvider(index);
-  vscode.window.registerTreeDataProvider("rakdevAi.view", treeProvider);
+  vscode.window.registerTreeDataProvider("speclens.view", treeProvider);
 
   // File watcher for Spec Kit format
   const watcher = vscode.workspace.createFileSystemWatcher(
@@ -64,66 +69,81 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Commands
   context.subscriptions.push(
-    vscode.commands.registerCommand("rakdevAi.newRequirement", () =>
+    vscode.commands.registerCommand("speclens.newRequirement", () =>
       newFileCommand("requirement"),
     ),
-    vscode.commands.registerCommand("rakdevAi.newDesign", () =>
+    vscode.commands.registerCommand("speclens.newDesign", () =>
       newFileCommand("design"),
     ),
-    vscode.commands.registerCommand("rakdevAi.newTask", () =>
+    vscode.commands.registerCommand("speclens.newTask", () =>
       newFileCommand("task"),
     ),
-    vscode.commands.registerCommand("rakdevAi.validateWorkspace", () =>
+    vscode.commands.registerCommand("speclens.validateWorkspace", () =>
       validateWorkspace(index, () =>
         validateAllOpen(index, diagnosticCollection, () =>
           updateStatusBar(index, diagnosticCollection),
         ),
       ),
     ),
-    vscode.commands.registerCommand("rakdevAi.generateTaskBreakdown", () =>
+    vscode.commands.registerCommand("speclens.generateTaskBreakdown", () =>
       taskBreakdown(index),
     ),
-    vscode.commands.registerCommand("rakdevAi.generateRequirementsDoc", () =>
+    vscode.commands.registerCommand("speclens.generateRequirementsDoc", () =>
       generateRequirementsDoc(),
     ),
     vscode.commands.registerCommand(
-      "rakdevAi.generateDesignFromRequirement",
+      "speclens.generateDesignFromRequirement",
       () => generateDesignFromRequirement(index),
     ),
-    vscode.commands.registerCommand("rakdevAi.generateTasksFromDesign", () =>
+    vscode.commands.registerCommand("speclens.generateTasksFromDesign", () =>
       generateTasksFromDesign(index, handleChange),
     ),
     vscode.commands.registerCommand(
-      "rakdevAi.changeTaskStatus",
+      "speclens.changeTaskStatus",
       (uri, taskId, status) =>
         changeTaskStatus(uri, taskId, status, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.startTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.startTask", (uri, taskId) =>
       startTask(uri, taskId, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.completeTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.completeTask", (uri, taskId) =>
       completeTask(uri, taskId, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.blockTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.blockTask", (uri, taskId) =>
       blockTask(uri, taskId, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.reopenTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.reopenTask", (uri, taskId) =>
       reopenTask(uri, taskId, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.unblockTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.unblockTask", (uri, taskId) =>
       unblockTask(uri, taskId, handleChange),
     ),
-    vscode.commands.registerCommand("rakdevAi.executeTask", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.executeTask", (uri, taskId) =>
       executeTask(uri, taskId),
     ),
-    vscode.commands.registerCommand("rakdevAi.viewTaskChanges", (uri, taskId) =>
+    vscode.commands.registerCommand("speclens.viewTaskChanges", (uri, taskId) =>
       viewTaskChanges(uri, taskId),
+    ),
+    vscode.commands.registerCommand("speclens.elaborateSpec", () =>
+      elaborateSpec(),
+    ),
+    vscode.commands.registerCommand("speclens.generatePlan", () =>
+      generatePlanFromSpec(),
+    ),
+    vscode.commands.registerCommand("speclens.generateTasks", () =>
+      generateTasksFromPlan(),
+    ),
+    vscode.commands.registerCommand("speclens.documentBugFix", () =>
+      documentBugFix(),
+    ),
+    vscode.commands.registerCommand("speclens.createSkill", () =>
+      createSkillFromSpec(),
     ),
   );
 
   // Diagnostics
   diagnosticCollection =
-    vscode.languages.createDiagnosticCollection("rakdevAi");
+    vscode.languages.createDiagnosticCollection("speclens");
   context.subscriptions.push(diagnosticCollection);
   await validateAllOpen(index, diagnosticCollection, () =>
     updateStatusBar(index, diagnosticCollection),
@@ -132,7 +152,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Config change listener
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((ev) => {
-      if (["rakdevAi"].some((k) => ev.affectsConfiguration(k))) {
+      if (["speclens"].some((k) => ev.affectsConfiguration(k))) {
         validateAllOpen(index, diagnosticCollection, () =>
           updateStatusBar(index, diagnosticCollection),
         );
@@ -161,7 +181,7 @@ export async function activate(context: vscode.ExtensionContext) {
   createStatusBar(context);
   updateStatusBar(index, diagnosticCollection);
   context.subscriptions.push(
-    vscode.commands.registerCommand("rakdevAi.showFlowSummary", () =>
+    vscode.commands.registerCommand("speclens.showFlowSummary", () =>
       showFlowSummary(index, diagnosticCollection),
     ),
   );

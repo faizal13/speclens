@@ -1,6 +1,6 @@
 {
-  "name": "rakdev-ai-extension",
-  "displayName": "RakDev AI",
+  "name": "speclens",
+  "displayName": "SpecLens",
   "icon": "resources/rakdev-ai.png",
   "description": "Local requirement→design→task workflow support (no CI).",
   "version": "0.0.4",
@@ -14,35 +14,40 @@
   "main": "dist/extension.js",
   "contributes": {
     "commands": [
-      {"command": "rakdevAi.newRequirement", "title": "RakDev AI: New Requirement"},
-      {"command": "rakdevAi.newDesign", "title": "RakDev AI: New Design"},
-      {"command": "rakdevAi.newTask", "title": "RakDev AI: New Task"},
-      {"command": "rakdevAi.validateWorkspace", "title": "RakDev AI: Validate Workspace"},
-      {"command": "rakdevAi.generateTaskBreakdown", "title": "RakDev AI: Generate Task Breakdown"},
-      {"command": "rakdevAi.showFlowSummary", "title": "RakDev AI: Show Flow Summary"},
-      {"command": "rakdevAi.generateRequirementsDoc", "title": "RakDev AI: Generate Requirements Catalog"},
-      {"command": "rakdevAi.generateDesignFromRequirement", "title": "RakDev AI: Generate Design from Requirement"},
-      {"command": "rakdevAi.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"}
+      {"command": "speclens.elaborateSpec", "title": "SpecLens: 🧠 Elaborate BA Notes → Spec", "category": "SpecLens"},
+      {"command": "speclens.generatePlan", "title": "SpecLens: 🏗️ Generate Plan from Spec", "category": "SpecLens"},
+      {"command": "speclens.generateTasks", "title": "SpecLens: 📋 Generate Tasks from Plan", "category": "SpecLens"},
+      {"command": "speclens.documentBugFix", "title": "SpecLens: 🐛 Document Bug & Create Fix Plan", "category": "SpecLens"},
+      {"command": "speclens.createSkill", "title": "SpecLens: 🍒 Create AI Skill from Spec (everything-copilot)", "category": "SpecLens"},
+      {"command": "speclens.newRequirement", "title": "RakDev AI: New Requirement"},
+      {"command": "speclens.newDesign", "title": "RakDev AI: New Design"},
+      {"command": "speclens.newTask", "title": "RakDev AI: New Task"},
+      {"command": "speclens.validateWorkspace", "title": "RakDev AI: Validate Workspace"},
+      {"command": "speclens.generateTaskBreakdown", "title": "RakDev AI: Generate Task Breakdown"},
+      {"command": "speclens.showFlowSummary", "title": "RakDev AI: Show Flow Summary"},
+      {"command": "speclens.generateRequirementsDoc", "title": "RakDev AI: Generate Requirements Catalog"},
+      {"command": "speclens.generateDesignFromRequirement", "title": "RakDev AI: Generate Design from Requirement"},
+      {"command": "speclens.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"}
     ],
     "configuration": {
       "type": "object",
       "title": "RakDev AI Configuration",
       "properties": {
-        "rakdevAi.idFormats.requirement": {"type": "string", "default": "^REQ-[0-9]{4}-[0-9]{4}$", "description": "Regex for requirement IDs."},
-        "rakdevAi.idFormats.design": {"type": "string", "default": "^DES-[0-9]{4}-[0-9]{4}$", "description": "Regex for design IDs."},
-        "rakdevAi.idFormats.task": {"type": "string", "default": "^TASK-[0-9]{4}-[0-9]{4}$", "description": "Regex for task IDs."},
-        "rakdevAi.enforceApprovedDesignBeforeTask": {"type": "boolean", "default": true, "description": "Require design approved before creating tasks."},
-        "rakdevAi.requiredSections.requirement": {"type": "array", "default": ["problem","metrics"], "items": {"type": "string"}, "description": "Required top-level YAML keys for requirements."},
-        "rakdevAi.requiredSections.design": {"type": "array", "default": ["decisions"], "items": {"type": "string"}, "description": "Required top-level YAML keys for designs."},
-        "rakdevAi.requiredSections.task": {"type": "array", "default": ["acceptance"], "items": {"type": "string"}, "description": "Required top-level YAML keys for tasks."},
-        "rakdevAi.breakdown.includeQualityTasks": {"type": "boolean", "default": true, "description": "Include quality-focused tasks (tests, observability, docs)."},
-        "rakdevAi.breakdown.maxTasks": {"type": "number", "default": 40, "description": "Maximum tasks to generate in breakdown preview."},
+        "speclens.idFormats.requirement": {"type": "string", "default": "^REQ-[0-9]{4}-[0-9]{4}$", "description": "Regex for requirement IDs."},
+        "speclens.idFormats.design": {"type": "string", "default": "^DES-[0-9]{4}-[0-9]{4}$", "description": "Regex for design IDs."},
+        "speclens.idFormats.task": {"type": "string", "default": "^TASK-[0-9]{4}-[0-9]{4}$", "description": "Regex for task IDs."},
+        "speclens.enforceApprovedDesignBeforeTask": {"type": "boolean", "default": true, "description": "Require design approved before creating tasks."},
+        "speclens.requiredSections.requirement": {"type": "array", "default": ["problem","metrics"], "items": {"type": "string"}, "description": "Required top-level YAML keys for requirements."},
+        "speclens.requiredSections.design": {"type": "array", "default": ["decisions"], "items": {"type": "string"}, "description": "Required top-level YAML keys for designs."},
+        "speclens.requiredSections.task": {"type": "array", "default": ["acceptance"], "items": {"type": "string"}, "description": "Required top-level YAML keys for tasks."},
+        "speclens.breakdown.includeQualityTasks": {"type": "boolean", "default": true, "description": "Include quality-focused tasks (tests, observability, docs)."},
+        "speclens.breakdown.maxTasks": {"type": "number", "default": 40, "description": "Maximum tasks to generate in breakdown preview."},
         "speclens.preferredAgent": {"type": "string", "enum": ["auto", "copilot", "claude", "cursor", "none"], "default": "auto", "description": "Preferred AI agent for task execution (auto = Claude > Copilot > Cursor)"}
       }
     },
     "views": {
       "explorer": [
-        {"id": "rakdevAi.view", "name": "RakDev AI", "icon": "resources/rakdev-ai.svg"}
+        {"id": "speclens.view", "name": "SpecLens", "icon": "resources/rakdev-ai.svg"}
       ]
     },
     "snippets": [

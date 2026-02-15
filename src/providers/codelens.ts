@@ -68,10 +68,10 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
         command: ''
       }));
 
-      codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Start', command: 'rakdevAi.startTask', arguments: [document.uri, virtualTaskId] }));
-      codeLenses.push(new vscode.CodeLens(taskRange, { title: '✅ Complete', command: 'rakdevAi.completeTask', arguments: [document.uri, virtualTaskId] }));
-      codeLenses.push(new vscode.CodeLens(taskRange, { title: '🤖 Get Help', command: 'rakdevAi.executeTask', arguments: [document.uri, virtualTaskId] }));
-      codeLenses.push(new vscode.CodeLens(taskRange, { title: '📝 View Changes', command: 'rakdevAi.viewTaskChanges', arguments: [document.uri, virtualTaskId] }));
+      codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Start', command: 'speclens.startTask', arguments: [document.uri, virtualTaskId] }));
+      codeLenses.push(new vscode.CodeLens(taskRange, { title: '✅ Complete', command: 'speclens.completeTask', arguments: [document.uri, virtualTaskId] }));
+      codeLenses.push(new vscode.CodeLens(taskRange, { title: '🤖 Get Help', command: 'speclens.executeTask', arguments: [document.uri, virtualTaskId] }));
+      codeLenses.push(new vscode.CodeLens(taskRange, { title: '📝 View Changes', command: 'speclens.viewTaskChanges', arguments: [document.uri, virtualTaskId] }));
     }
 
     return codeLenses;
@@ -88,25 +88,25 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
     const statusEmoji = status === 'done' ? '✅' : status === 'in-progress' ? '🔄' : '⏳';
     codeLenses.push(new vscode.CodeLens(topRange, {
       title: `${statusEmoji} Status: ${status}`,
-      command: 'rakdevAi.changeTaskStatus',
+      command: 'speclens.changeTaskStatus',
       arguments: [document.uri, taskId, status]
     }));
 
     if (status === 'todo') {
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '▶️ Start Task', command: 'rakdevAi.startTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '▶️ Start Task', command: 'speclens.startTask', arguments: [document.uri, taskId] }));
     } else if (status === 'in-progress') {
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '✅ Complete Task', command: 'rakdevAi.completeTask', arguments: [document.uri, taskId] }));
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '🚫 Block Task', command: 'rakdevAi.blockTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '✅ Complete Task', command: 'speclens.completeTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '🚫 Block Task', command: 'speclens.blockTask', arguments: [document.uri, taskId] }));
     } else if (status === 'done') {
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '🔄 Reopen Task', command: 'rakdevAi.reopenTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '🔄 Reopen Task', command: 'speclens.reopenTask', arguments: [document.uri, taskId] }));
     } else if (status === 'blocked') {
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '▶️ Unblock Task', command: 'rakdevAi.unblockTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '▶️ Unblock Task', command: 'speclens.unblockTask', arguments: [document.uri, taskId] }));
     }
 
-    codeLenses.push(new vscode.CodeLens(topRange, { title: '🤖 Get Copilot Help', command: 'rakdevAi.executeTask', arguments: [document.uri, taskId] }));
+    codeLenses.push(new vscode.CodeLens(topRange, { title: '🤖 Get Copilot Help', command: 'speclens.executeTask', arguments: [document.uri, taskId] }));
 
     if (status === 'in-progress' || status === 'done') {
-      codeLenses.push(new vscode.CodeLens(topRange, { title: '📝 View Changes', command: 'rakdevAi.viewTaskChanges', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(topRange, { title: '📝 View Changes', command: 'speclens.viewTaskChanges', arguments: [document.uri, taskId] }));
     }
 
     return codeLenses;

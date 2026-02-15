@@ -29,7 +29,7 @@ function pushDiag(
   severity: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Warning,
 ) {
   const d = new vscode.Diagnostic(lineRangeFor(line), msg, severity);
-  d.source = "RakDev AI";
+  d.source = "SpecLens";
   diags.push(d);
 }
 
@@ -46,7 +46,7 @@ export async function validateUri(
   const diagnostics: vscode.Diagnostic[] = [];
   const cfg = vscode.workspace.getConfiguration();
   const enforceApproved = cfg.get<boolean>(
-    "rakdevAi.enforceApprovedDesignBeforeTask",
+    "speclens.enforceApprovedDesignBeforeTask",
     true,
   );
 

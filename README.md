@@ -19,12 +19,244 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 
 ## Features
 
+✅ **BA→Spec Elaboration** - Transform rough notes into formal specs with AI
+✅ **Bug Fix Documentation** - Document production bugs with fix plans and tasks
+✅ **Context Document Support** - Attach architecture diagrams, schemas, APIs as context
+✅ **Microservices Support** - API contracts, events, service dependencies
+✅ **everything-copilot Integration** 🍒 - Specialized agents + auto-loading specs
+✅ **Intelligent Agent Routing** - @architect, @tdd, @security-reviewer (cost-optimized)
+✅ **Spec-as-Skill** - Auto-load spec context when editing related code
 ✅ **Auto-detects Spec Kit format** (`specs/[branch]/{spec,plan,tasks}.md`)
 ✅ **Agent-agnostic task routing** - Works with Copilot, Claude Code, or Cursor
 ✅ **Interactive CodeLens** - Start/Complete/Block tasks without leaving the editor
 ✅ **Live diagnostics** - Validates specs, plans, and tasks as you write
 ✅ **Tree view** - Browse all specs in your workspace
 ✅ **Status bar** - See spec/plan/task counts at a glance
+
+---
+
+## 🧠 BA → Spec Elaboration Workflow
+
+**The Problem:** Business Analysts often struggle to write formal, well-structured requirements. They know what they want at a high level but can't document it properly for development teams.
+
+**The Solution:** SpecLens's AI-powered spec elaboration workflow transforms rough BA notes into formal specs following industry-standard formats (GitHub Spec Kit, AWS Kiro, Google BMAD).
+
+### How It Works
+
+1. **BA provides rough notes** - Just describe the requirement at a high level
+   ```
+   "We need user login with email and password, maybe social login too"
+   ```
+
+2. **AI asks clarifying questions** - The agent probes for:
+   - Scope and boundaries
+   - User personas and use cases
+   - Success metrics
+   - Edge cases and constraints
+   - Security/performance requirements
+
+3. **AI generates formal spec.md** - Following GitHub Spec Kit format:
+   - Overview (what and why)
+   - Goals and non-goals
+   - User stories
+   - Success metrics
+   - Technical requirements
+   - Out of scope section
+
+4. **BA/Dev reviews and iterates** - Edit the spec, add details, refine with AI
+
+5. **Generate plan.md** - Create architecture/design from the approved spec
+   ```
+   SpecLens: 🏗️ Generate Plan from Spec
+   ```
+
+6. **Generate tasks.md** - Break plan into incremental work items
+   ```
+   SpecLens: 📋 Generate Tasks from Plan
+   ```
+
+7. **Execute with CodeLens** - Click "Start Task" buttons to route tasks to AI agent
+
+### Using the Commands
+
+#### 1. Elaborate BA Notes → Spec (with Context Documents)
+Open Command Palette (`Cmd+Shift+P`) and run:
+```
+SpecLens: 🧠 Elaborate BA Notes → Spec
+```
+- Paste rough BA notes
+- Choose microservice or monolith
+- Enter feature name (e.g., `user-authentication`)
+- **Optional:** Attach context documents (architecture diagrams, API docs, database schemas)
+- AI generates complete spec.md (with API contracts for microservices)
+- Save to `specs/[feature-name]/spec.md`
+
+**Context Documents:**
+- Architecture diagrams (PNG, SVG)
+- Database schemas (SQL, Prisma)
+- API documentation (JSON, YAML, OpenAPI)
+- Existing code (TS, JS, Python)
+- Any relevant docs (PDF, MD, TXT)
+
+Files are copied to `specs/[feature]/context/` and auto-loaded in subsequent commands.
+
+#### 2. Generate Plan from Spec
+After creating spec.md, run:
+```
+SpecLens: 🏗️ Generate Plan from Spec
+```
+- Select which spec to generate plan from
+- AI creates architecture, tech stack, data models, API design
+- Save to `specs/[feature-name]/plan.md`
+
+#### 3. Generate Tasks from Plan
+After creating plan.md, run:
+```
+SpecLens: 📋 Generate Tasks from Plan
+```
+- Select which plan to break down
+- AI creates 15-25 incremental tasks (2-4 hours each)
+- Each task has acceptance criteria and dependencies
+- Save to `specs/[feature-name]/tasks.md`
+
+#### 4. Document Bug Fixes (NEW! 🐛)
+For production bugs, run:
+```
+SpecLens: 🐛 Document Bug & Create Fix Plan
+```
+- Describe the bug
+- Select severity (Critical/High/Medium/Low)
+- Add reproduction steps and error messages
+- AI generates:
+  - `spec.md`: Bug analysis, root cause, impact assessment
+  - `plan.md`: Investigation steps, fix approach, rollback plan
+  - `tasks.md`: 7 focused tasks (reproduce, debug, fix, test, deploy, monitor)
+- Save to `specs/bugfix-YYYY-XXXX/`
+
+**Perfect for:**
+- Production incidents
+- Critical hotfixes
+- Regression bugs
+- User-reported issues
+
+#### 5. Execute Tasks with CodeLens
+Open `tasks.md` and click CodeLens buttons:
+- **Start Task** - Opens AI agent with task context
+- **Complete Task** - Marks task as done
+- **Block Task** - Flags blockers
+
+**Tip:** Works with **any AI agent** - Copilot, Claude Code, or Cursor. Configure your preference in settings: `speclens.preferredAgent`
+
+---
+
+## 🔧 Microservices Support
+
+SpecLens fully supports microservice architectures! When creating specs for microservices:
+
+**Enhanced Spec Template Includes:**
+- **Service Context**: Service name, responsibilities, boundaries
+- **Service Dependencies**: Upstream/downstream services, external APIs
+- **API Contracts**: Endpoint specs with request/response types
+- **Event Schemas**: Published and consumed events with JSON schemas
+- **Inter-Service Communication**: REST, gRPC, message queues
+
+**Example Workflow:**
+1. Run `SpecLens: 🧠 Elaborate BA Notes → Spec`
+2. Select "Microservice Feature"
+3. Enter service name: `payment-service`
+4. Enter feature: `payment-service-stripe-integration`
+5. AI generates spec with:
+   - API contract (POST /api/payments/create)
+   - Events (payment.created, payment.failed)
+   - Dependencies (User Service, Order Service)
+   - Stripe integration points
+
+**Plan.md Additions:**
+- Service discovery and load balancing
+- API gateway routing
+- Event bus topology
+- Contract testing strategy (Pact, OpenAPI validation)
+
+**Best for:**
+- Payment services
+- User services
+- Notification services
+- Independent bounded contexts
+
+---
+
+## 🍒 everything-copilot Integration (Optional)
+
+Supercharge SpecLens with [everything-copilot](https://github.com/faizal13/everything-copilot) for specialized AI agents and cost optimization!
+
+### Install everything-copilot
+
+```bash
+npx everything-copilot init
+```
+
+### Feature 1: Intelligent Agent Routing
+
+SpecLens automatically routes tasks to specialized agents based on task type:
+
+| Task Type | Agent | Model | Use Case |
+|-----------|-------|-------|----------|
+| Setup, Database, Architecture | `@architect` | Opus | Strategic decisions, schema design |
+| Tests, TDD | `@tdd` | Sonnet | Write tests first, >90% coverage |
+| E2E Testing | `@e2e` | Sonnet | Playwright/Cypress flows |
+| Security, Auth, CSRF | `@security-reviewer` | Opus | OWASP Top 10, audit |
+| Refactoring, Cleanup | `@refactor` | Sonnet | Code quality, SOLID |
+| General Implementation | `@implement` | Sonnet | Feature development |
+
+**Example:**
+```
+1. Open tasks.md
+2. Click "Start Task" on "Write unit tests for password hashing"
+3. SpecLens detects "test" → Routes to @tdd agent
+4. Notification: "🤖 Routing to @tdd - Model: SONNET"
+5. Copilot Chat opens with TDD specialist context
+```
+
+**Cost Optimization:**
+- **With everything-copilot:** ~$1.20/M tokens (Opus 5%, Sonnet 35%, Haiku 60%)
+- **Without:** ~$15/M tokens (all Opus)
+- **Savings:** 92% cost reduction 💰
+
+### Feature 2: Spec-as-Skill (Auto-Loading Context)
+
+Embed your spec/plan/tasks as an auto-loading AI skill that triggers when editing related code.
+
+**Setup:**
+```
+1. Complete spec.md and plan.md
+2. Run: SpecLens: 🍒 Create AI Skill from Spec
+3. Select feature: user-authentication
+4. File pattern: src/auth/**
+```
+
+**Result:**
+- Creates `.copilot-agents/skills/spec-user-authentication.md`
+- Updates `.copilot-agents/config.json` with trigger
+- Skill auto-loads when editing `src/auth/*.ts`
+
+**Usage:**
+```typescript
+// src/auth/login.ts
+// Ask Copilot: "What are the authentication requirements?"
+
+// Copilot response (with spec context):
+// "Based on the user-authentication spec:
+// - Password hashing with bcrypt (cost factor 12)
+// - Session management with JWT
+// - CSRF protection required
+// - Rate limiting: max 5 login attempts per 15min"
+```
+
+**Benefits:**
+- ✅ Zero manual context copying
+- ✅ AI responses aligned with approved spec
+- ✅ Prevents implementation drift
+- ✅ Works across the team (committed to repo)
 
 ---
 
@@ -352,6 +584,18 @@ SpecLens is the **only** VS Code extension that brings IDE-level support to Spec
 - [ ] **Phase 4**: VS Code Marketplace publish
 - [ ] **Phase 5**: Traceability matrix webview
 - [ ] **Phase 6**: Spec drift detection
+
+---
+
+## Testing
+
+See [TESTING-GUIDE.md](./TESTING-GUIDE.md) for comprehensive step-by-step testing instructions with 6 detailed scenarios:
+- Feature Development (BA→Spec→Plan→Tasks→Implementation)
+- Bug Fix in Production
+- Microservice Development
+- Context Documents
+- everything-copilot Integration
+- No AI Agent (graceful degradation)
 
 ---
 
