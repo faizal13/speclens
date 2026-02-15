@@ -2,11 +2,33 @@
   "name": "speclens",
   "displayName": "SpecLens",
   "icon": "resources/rakdev-ai.png",
-  "description": "Local requirement→design→task workflow support (no CI).",
+  "description": "Visual layer for Spec-Driven Development with GitHub Spec Kit. AI-powered spec elaboration, validation, traceability matrix, kanban board, and drift detection.",
   "version": "0.0.4",
   "publisher": "Rakbank",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faizal13/speclens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/faizal13/speclens/issues"
+  },
+  "homepage": "https://github.com/faizal13/speclens#readme",
+  "license": "MIT",
   "engines": { "vscode": ">=1.90.0" },
   "categories": ["Other"],
+  "keywords": [
+    "spec-driven-development",
+    "github-spec-kit",
+    "requirements",
+    "planning",
+    "documentation",
+    "ai",
+    "copilot",
+    "claude",
+    "traceability",
+    "kanban",
+    "validation"
+  ],
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:docs/requirements"
