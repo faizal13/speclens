@@ -23,6 +23,8 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 ✅ **Bug Fix Documentation** - Document production bugs with fix plans and tasks
 ✅ **Context Document Support** - Attach architecture diagrams, schemas, APIs as context
 ✅ **Microservices Support** - API contracts, events, service dependencies
+✅ **Enhanced Validation** 📊 - Spec completeness scoring, traceability, task coverage
+✅ **Validation Reports** - Interactive dashboards with health metrics and recommendations
 ✅ **everything-copilot Integration** 🍒 - Specialized agents + auto-loading specs
 ✅ **Intelligent Agent Routing** - @architect, @tdd, @security-reviewer (cost-optimized)
 ✅ **Spec-as-Skill** - Auto-load spec context when editing related code
@@ -182,6 +184,138 @@ SpecLens fully supports microservice architectures! When creating specs for micr
 - User services
 - Notification services
 - Independent bounded contexts
+
+---
+
+## 📊 Enhanced Validation & Quality Metrics
+
+SpecLens provides comprehensive validation to ensure your spec-driven development is on track.
+
+### Feature 1: Spec Completeness Scoring
+
+Get a 0-100% score on your spec quality with detailed breakdown:
+
+```
+Command: SpecLens: 📊 Show Validation Report
+
+Spec Completeness: 85% (Grade B)
+✓ Overview Section (10 pts)
+✓ Goals Section (10 pts)
+✓ User Stories (15 pts)
+✓ Success Metrics (15 pts)
+✓ Technical Requirements (15 pts)
+✗ Data Model (0/10 pts) ← Missing
+✓ Out of Scope (10 pts)
+✓ Security Considerations (15 pts)
+
+Suggestion: Add data models (TypeScript interfaces, SQL schemas)
+```
+
+**Scoring Criteria:**
+- **Overview** (10 pts): Clear 2-3 sentence summary
+- **Goals** (10 pts): What you're trying to achieve
+- **User Stories** (15 pts): As a [user], I want [action]...
+- **Success Metrics** (15 pts): Measurable, quantifiable goals
+- **Technical Requirements** (15 pts): Functional + non-functional
+- **Data Model** (10 pts): TypeScript/SQL definitions
+- **Out of Scope** (10 pts): What you're NOT building
+- **Security** (15 pts): Auth, encryption, CSRF, XSS protection
+
+**Grades:**
+- **A (90-100%)**: Production-ready spec
+- **B (80-89%)**: Good spec, minor improvements needed
+- **C (70-79%)**: Fair spec, address gaps
+- **D (60-69%)**: Incomplete spec, major work needed
+- **F (<60%)**: Missing critical sections
+
+### Feature 2: Plan-to-Spec Traceability
+
+Ensure your implementation plan aligns with your approved spec:
+
+```
+Plan-to-Spec Alignment: 80%
+
+✓ Tech Stack Defined (20 pts)
+✓ Architecture Described (20 pts)
+✗ Data Models Don't Match Spec (0/20 pts)
+✓ Security Requirements Addressed (20 pts)
+✓ Performance Requirements Addressed (20 pts)
+
+Gaps:
+- Plan missing User, Session models defined in spec
+- Spec mentions OAuth but plan doesn't include OAuth setup
+
+Warnings:
+- Spec defines success metrics but plan lacks monitoring strategy
+```
+
+**What it checks:**
+- Tech stack chosen and justified
+- Architecture documented
+- Data models match spec requirements
+- Security requirements addressed in plan
+- Performance requirements addressed in plan
+- Spec goals referenced in plan
+- Success metrics have measurement strategy
+
+### Feature 3: Task Coverage Percentage
+
+Track implementation progress across all tasks:
+
+```
+Task Coverage Dashboard
+
+Total Tasks: 20
+✅ Completed: 12 (60%)
+🔄 In Progress: 2 (10%)
+🚫 Blocked: 1 (5%)
+📋 Pending: 5 (25%)
+
+Progress: 70% (completed + in-progress)
+Coverage: 60% (completed only)
+
+Time Estimates:
+Total: 55 hours
+Completed: 33 hours
+Remaining: 22 hours
+```
+
+**Metrics Provided:**
+- Total task count
+- Status breakdown (completed, in-progress, blocked, pending)
+- Coverage percentage (% completed)
+- Progress percentage (% started)
+- Time estimates (total, completed, remaining)
+
+### Interactive Validation Report
+
+**Command:** `SpecLens: 📊 Show Validation Report`
+
+Opens an interactive webview with:
+- **Overall Health Badge**: Excellent / Good / Fair / Poor
+- **Spec Completeness Score**: 0-100% with grade
+- **Requirements Checklist**: Visual checklist of all sections
+- **Traceability Analysis**: Plan-to-spec alignment percentage
+- **Coverage Dashboard**: Task progress with charts
+- **Critical Issues**: Highlighted problems to address
+- **Recommendations**: Actionable suggestions
+
+**Example Output:**
+```
+Overall Health: Good
+
+Critical Issues:
+❌ 1 task is blocked
+⚠️ Data models in plan don't match spec
+
+Recommendations:
+💡 Add data models (TypeScript interfaces) to spec
+💡 Include monitoring strategy for success metrics
+💡 Unblock Task 8 before proceeding
+
+Next Steps:
+👍 You're on the right track. Address recommendations to reach Excellent status.
+```
 
 ---
 
