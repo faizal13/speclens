@@ -10,13 +10,20 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
   }
 
   public provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+    const text = document.getText();
+    const lines = text.split(/\r?\n/);
+
+    // Spec Kit format: specs/*/tasks.md (no front-matter, uses ## Task N:)
+    if (document.uri.fsPath.includes('/specs/') && document.uri.fsPath.endsWith('/tasks.md')) {
+      return this.provideSpecKitTaskLenses(lines, document);
+    }
+
+    // Legacy RakDev format: docs/tasks/ (YAML front-matter)
     if (!document.uri.fsPath.includes('/docs/tasks/')) {
       return [];
     }
 
     const codeLenses: vscode.CodeLens[] = [];
-    const text = document.getText();
-    const lines = text.split(/\r?\n/);
 
     const fmMatch = /^---\n([\s\S]*?)\n---/m.exec(text);
     if (!fmMatch) return [];
@@ -31,6 +38,84 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     return this.provideSingleTaskLenses(fm, fmMatch, document);
+  }
+
+  /**
+   * Provide CodeLens for Spec Kit format tasks.md
+   * Format: ## Task 1: Title
+   */
+  private provideSpecKitTaskLenses(lines: string[], document: vscode.TextDocument): vscode.CodeLens[] {
+    const codeLenses: vscode.CodeLens[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // Match: ## Task 1: Setup Database Schema
+      const taskMatch = line.match(/^##\s+Task\s+(\d+):\s*(.+?)$/i);
+      if (!taskMatch) continue;
+
+      const taskNumber = taskMatch[1];
+      const taskTitle = taskMatch[2];
+      const taskId = `TASK-${taskNumber}`;
+
+      const taskRange = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i, 0));
+
+      // Extract task content (everything until next ## Task or EOF)
+      let taskContent = '';
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].match(/^##\s+Task\s+\d+:/i)) break;
+        if (lines[j].match(/^#\s+/)) break; // Stop at top-level heading
+        taskContent += lines[j] + '\n';
+      }
+
+      // Extract status from **Status:** field
+      const statusMatch = taskContent.match(/\*\*Status:\*\*\s*(Pending|In Progress|Blocked|Done|TODO|IN-PROGRESS|COMPLETED)/i);
+      let taskStatus: 'pending' | 'in-progress' | 'blocked' | 'done' = 'pending';
+      if (statusMatch) {
+        const status = statusMatch[1].toLowerCase();
+        if (status === 'done' || status === 'completed') taskStatus = 'done';
+        else if (status === 'in-progress' || status === 'in progress') taskStatus = 'in-progress';
+        else if (status === 'blocked') taskStatus = 'blocked';
+        else taskStatus = 'pending';
+      }
+
+      // Extract estimated time
+      const hoursMatch = taskContent.match(/\*\*Estimated\s+Time:\*\*\s*(\d+)\s*hours?/i);
+      const estimate = hoursMatch ? hoursMatch[1] : '?';
+
+      // Count acceptance criteria checkboxes
+      const totalChecks = (taskContent.match(/- \[[ x]\]/gi) || []).length;
+      const completedChecks = (taskContent.match(/- \[x\]/gi) || []).length;
+      const progressPct = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
+
+      // Status indicator
+      const statusEmoji = taskStatus === 'done' ? '✅' : taskStatus === 'in-progress' ? '🔵' : taskStatus === 'blocked' ? '🔴' : '🟡';
+      codeLenses.push(new vscode.CodeLens(taskRange, {
+        title: `${statusEmoji} ${taskStatus.toUpperCase()} | ⏱️ ${estimate}h | 📊 ${progressPct}% (${completedChecks}/${totalChecks})`,
+        command: ''
+      }));
+
+      // Action buttons based on status
+      if (taskStatus === 'pending') {
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Start Task', command: 'speclens.startTask', arguments: [document.uri, taskId] }));
+      } else if (taskStatus === 'in-progress') {
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '✅ Complete', command: 'speclens.completeTask', arguments: [document.uri, taskId] }));
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '🚫 Block', command: 'speclens.blockTask', arguments: [document.uri, taskId] }));
+      } else if (taskStatus === 'blocked') {
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Unblock', command: 'speclens.unblockTask', arguments: [document.uri, taskId] }));
+      } else if (taskStatus === 'done') {
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '🔄 Reopen', command: 'speclens.reopenTask', arguments: [document.uri, taskId] }));
+      }
+
+      // Always show "Get AI Help" button
+      codeLenses.push(new vscode.CodeLens(taskRange, { title: '🤖 Get AI Help', command: 'speclens.executeTask', arguments: [document.uri, taskId] }));
+
+      // View changes button for in-progress/done tasks
+      if (taskStatus === 'in-progress' || taskStatus === 'done') {
+        codeLenses.push(new vscode.CodeLens(taskRange, { title: '📝 View Changes', command: 'speclens.viewTaskChanges', arguments: [document.uri, taskId] }));
+      }
+    }
+
+    return codeLenses;
   }
 
   private provideBreakdownLenses(lines: string[], docId: string, document: vscode.TextDocument): vscode.CodeLens[] {
