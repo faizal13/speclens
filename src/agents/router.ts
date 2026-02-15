@@ -48,14 +48,26 @@ async function routeToCopilot(context: TaskContext, agent: AgentCapabilities): P
   const prompt = buildCopilotPrompt(context);
 
   try {
+    // Try edit command first if in implement mode
     if (context.mode === 'implement' && agent.editCommand) {
-      await vscode.commands.executeCommand(agent.editCommand, { query: prompt });
-      vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
-    } else if (agent.chatCommand) {
+      try {
+        await vscode.commands.executeCommand(agent.editCommand, { query: prompt });
+        vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
+        return true;
+      } catch (editError: any) {
+        // Edit command not available, fall back to chat
+        console.log(`Edit command failed, falling back to chat: ${editError.message}`);
+      }
+    }
+
+    // Fall back to chat command
+    if (agent.chatCommand) {
       await vscode.commands.executeCommand(agent.chatCommand, { query: prompt });
       vscode.window.showInformationMessage(`💬 ${agent.name} opened for task ${context.taskId}`);
+      return true;
     }
-    return true;
+
+    throw new Error('No available commands for Copilot');
   } catch (e: any) {
     vscode.window.showErrorMessage(`Failed to open ${agent.name}: ${e.message}`);
     return false;
@@ -69,16 +81,26 @@ async function routeToClaude(context: TaskContext, agent: AgentCapabilities): Pr
   const prompt = buildClaudePrompt(context);
 
   try {
+    // Try edit command first if in implement mode
     if (context.mode === 'implement' && agent.editCommand) {
-      // Claude Code edit mode
-      await vscode.commands.executeCommand(agent.editCommand, prompt);
-      vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
-    } else if (agent.chatCommand) {
-      // Claude Code chat mode
+      try {
+        await vscode.commands.executeCommand(agent.editCommand, prompt);
+        vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
+        return true;
+      } catch (editError: any) {
+        // Edit command not available, fall back to chat
+        console.log(`Edit command failed, falling back to chat: ${editError.message}`);
+      }
+    }
+
+    // Fall back to chat command
+    if (agent.chatCommand) {
       await vscode.commands.executeCommand(agent.chatCommand, prompt);
       vscode.window.showInformationMessage(`💬 ${agent.name} opened for task ${context.taskId}`);
+      return true;
     }
-    return true;
+
+    throw new Error('No available commands for Claude Code');
   } catch (e: any) {
     vscode.window.showErrorMessage(`Failed to open ${agent.name}: ${e.message}`);
     return false;
