@@ -23,6 +23,9 @@ SpecLens adds the **visual IDE layer** that file-convention tools can't provide:
 ✅ **Bug Fix Documentation** - Document production bugs with fix plans and tasks
 ✅ **Context Document Support** - Attach architecture diagrams, schemas, APIs as context
 ✅ **Microservices Support** - API contracts, events, service dependencies
+✅ **everything-copilot Integration** 🍒 - Specialized agents + auto-loading specs
+✅ **Intelligent Agent Routing** - @architect, @tdd, @security-reviewer (cost-optimized)
+✅ **Spec-as-Skill** - Auto-load spec context when editing related code
 ✅ **Auto-detects Spec Kit format** (`specs/[branch]/{spec,plan,tasks}.md`)
 ✅ **Agent-agnostic task routing** - Works with Copilot, Claude Code, or Cursor
 ✅ **Interactive CodeLens** - Start/Complete/Block tasks without leaving the editor
@@ -179,6 +182,81 @@ SpecLens fully supports microservice architectures! When creating specs for micr
 - User services
 - Notification services
 - Independent bounded contexts
+
+---
+
+## 🍒 everything-copilot Integration (Optional)
+
+Supercharge SpecLens with [everything-copilot](https://github.com/faizal13/everything-copilot) for specialized AI agents and cost optimization!
+
+### Install everything-copilot
+
+```bash
+npx everything-copilot init
+```
+
+### Feature 1: Intelligent Agent Routing
+
+SpecLens automatically routes tasks to specialized agents based on task type:
+
+| Task Type | Agent | Model | Use Case |
+|-----------|-------|-------|----------|
+| Setup, Database, Architecture | `@architect` | Opus | Strategic decisions, schema design |
+| Tests, TDD | `@tdd` | Sonnet | Write tests first, >90% coverage |
+| E2E Testing | `@e2e` | Sonnet | Playwright/Cypress flows |
+| Security, Auth, CSRF | `@security-reviewer` | Opus | OWASP Top 10, audit |
+| Refactoring, Cleanup | `@refactor` | Sonnet | Code quality, SOLID |
+| General Implementation | `@implement` | Sonnet | Feature development |
+
+**Example:**
+```
+1. Open tasks.md
+2. Click "Start Task" on "Write unit tests for password hashing"
+3. SpecLens detects "test" → Routes to @tdd agent
+4. Notification: "🤖 Routing to @tdd - Model: SONNET"
+5. Copilot Chat opens with TDD specialist context
+```
+
+**Cost Optimization:**
+- **With everything-copilot:** ~$1.20/M tokens (Opus 5%, Sonnet 35%, Haiku 60%)
+- **Without:** ~$15/M tokens (all Opus)
+- **Savings:** 92% cost reduction 💰
+
+### Feature 2: Spec-as-Skill (Auto-Loading Context)
+
+Embed your spec/plan/tasks as an auto-loading AI skill that triggers when editing related code.
+
+**Setup:**
+```
+1. Complete spec.md and plan.md
+2. Run: SpecLens: 🍒 Create AI Skill from Spec
+3. Select feature: user-authentication
+4. File pattern: src/auth/**
+```
+
+**Result:**
+- Creates `.copilot-agents/skills/spec-user-authentication.md`
+- Updates `.copilot-agents/config.json` with trigger
+- Skill auto-loads when editing `src/auth/*.ts`
+
+**Usage:**
+```typescript
+// src/auth/login.ts
+// Ask Copilot: "What are the authentication requirements?"
+
+// Copilot response (with spec context):
+// "Based on the user-authentication spec:
+// - Password hashing with bcrypt (cost factor 12)
+// - Session management with JWT
+// - CSRF protection required
+// - Rate limiting: max 5 login attempts per 15min"
+```
+
+**Benefits:**
+- ✅ Zero manual context copying
+- ✅ AI responses aligned with approved spec
+- ✅ Prevents implementation drift
+- ✅ Works across the team (committed to repo)
 
 ---
 
@@ -506,6 +584,18 @@ SpecLens is the **only** VS Code extension that brings IDE-level support to Spec
 - [ ] **Phase 4**: VS Code Marketplace publish
 - [ ] **Phase 5**: Traceability matrix webview
 - [ ] **Phase 6**: Spec drift detection
+
+---
+
+## Testing
+
+See [TESTING-GUIDE.md](./TESTING-GUIDE.md) for comprehensive step-by-step testing instructions with 6 detailed scenarios:
+- Feature Development (BA→Spec→Plan→Tasks→Implementation)
+- Bug Fix in Production
+- Microservice Development
+- Context Documents
+- everything-copilot Integration
+- No AI Agent (graceful degradation)
 
 ---
 
