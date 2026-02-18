@@ -12,47 +12,59 @@ export interface AgentCapabilities {
 
 /**
  * Detect all available AI coding agents in the current VS Code environment
+ * Uses actual command existence checks (not just extension presence)
  */
 export async function detectAvailableAgents(): Promise<AgentCapabilities[]> {
   const agents: AgentCapabilities[] = [];
+  const allCommands = await vscode.commands.getCommands();
 
-  // Detect GitHub Copilot Chat
-  const copilotExtension = vscode.extensions.getExtension(
-    "GitHub.copilot-chat",
-  );
-  if (copilotExtension) {
+  // --- GitHub Copilot Chat ---
+  // Check extension AND verify at least the chat command exists
+  const copilotExt = vscode.extensions.getExtension("GitHub.copilot-chat");
+  if (copilotExt) {
+    // Try the newer inline chat command, then fall back to panel chat
+    const editCmd = [
+      "workbench.action.chat.openEditSession",  // Copilot Edit (newer)
+      "github.copilot.chat.focus",               // Focus chat panel
+    ].find(cmd => allCommands.includes(cmd));
+
+    const chatCmd = [
+      "workbench.action.chat.open",              // Panel chat (common)
+      "github.copilot.chat.focus",               // Focus existing panel
+    ].find(cmd => allCommands.includes(cmd));
+
     agents.push({
       type: "copilot",
       available: true,
-      chatCommand: "workbench.action.chat.open",
-      editCommand: "workbench.action.chat.openEditSession",
+      chatCommand: chatCmd,
+      editCommand: editCmd,
       name: "GitHub Copilot",
     });
   }
 
-  // Detect Claude Code (check for claude command in VS Code)
-  // Claude Code uses 'claude.chat' and 'claude.edit' commands
-  const claudeAvailable = await checkCommandExists("claude.chat");
-  if (claudeAvailable) {
+  // --- Claude Code ---
+  const claudeChatCmd = ["claude.chat", "claude.openChat"].find(cmd => allCommands.includes(cmd));
+  const claudeEditCmd = ["claude.edit"].find(cmd => allCommands.includes(cmd));
+  if (claudeChatCmd || claudeEditCmd) {
     agents.push({
       type: "claude",
       available: true,
-      chatCommand: "claude.chat",
-      editCommand: "claude.edit",
+      chatCommand: claudeChatCmd,
+      editCommand: claudeEditCmd,
       name: "Claude Code",
     });
   }
 
-  // Detect Cursor composer
-  // Cursor uses 'composer.startComposerEdit' command
-  const cursorAvailable = await checkCommandExists(
+  // --- Cursor Composer ---
+  const cursorCmd = [
     "composer.startComposerEdit",
-  );
-  if (cursorAvailable) {
+    "aipopup.action.modal.generate",
+  ].find(cmd => allCommands.includes(cmd));
+  if (cursorCmd) {
     agents.push({
       type: "cursor",
       available: true,
-      editCommand: "composer.startComposerEdit",
+      editCommand: cursorCmd,
       name: "Cursor Composer",
     });
   }
@@ -63,9 +75,7 @@ export async function detectAvailableAgents(): Promise<AgentCapabilities[]> {
 /**
  * Get the preferred agent based on user config or auto-detection
  */
-export async function getPreferredAgent(): Promise<
-  AgentCapabilities | undefined
-> {
+export async function getPreferredAgent(): Promise<AgentCapabilities | undefined> {
   const config = vscode.workspace.getConfiguration("speclens");
   const preferredType = config.get<AgentType>("preferredAgent", "auto");
 
@@ -80,18 +90,5 @@ export async function getPreferredAgent(): Promise<
     );
   }
 
-  // User has explicit preference
   return available.find((a) => a.type === preferredType);
-}
-
-/**
- * Check if a VS Code command exists
- */
-async function checkCommandExists(commandId: string): Promise<boolean> {
-  try {
-    const commands = await vscode.commands.getCommands();
-    return commands.includes(commandId);
-  } catch {
-    return false;
-  }
 }
