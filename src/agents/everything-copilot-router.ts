@@ -264,6 +264,11 @@ export function buildAgentTaskPrompt(task: TaskContext, agentType: AgentType, sp
 
 /**
  * Route task to everything-copilot agent
+ *
+ * Strategy: clipboard-first (same as generic router)
+ * 1. Copy prompt to clipboard
+ * 2. Try multiple commands to open chat
+ * 3. Always show notification with paste instructions as fallback
  */
 export async function routeToEverythingCopilot(
   task: TaskContext,
@@ -277,34 +282,51 @@ export async function routeToEverythingCopilot(
   // Build prompt with agent prefix
   const prompt = buildAgentTaskPrompt(task, agentType, spec, plan);
 
+  // Always copy to clipboard first — guaranteed fallback
+  await vscode.env.clipboard.writeText(prompt);
+
   // Show notification about which agent is being used
   vscode.window.showInformationMessage(
     `🤖 Routing to ${agent.handle} (${agent.description}) - Model: ${agent.model.toUpperCase()}`
   );
 
-  // Open Copilot Chat with agent-prefixed prompt
-  try {
-    const copilotExtension = vscode.extensions.getExtension('GitHub.copilot-chat');
-    if (copilotExtension) {
-      await vscode.commands.executeCommand('workbench.action.chat.open', { query: prompt });
-      return true;
-    }
+  // Try multiple commands to open chat panel
+  const chatCommands = [
+    { cmd: 'workbench.action.chat.open', args: { query: prompt } },
+    { cmd: 'workbench.action.chat.open', args: undefined },
+    { cmd: 'github.copilot.chat.focus', args: undefined },
+    { cmd: 'workbench.panel.chat.view.copilot.focus', args: undefined },
+  ];
 
-    // Fallback to regular chat if Copilot not available
-    vscode.window.showWarningMessage(
-      'GitHub Copilot not detected. Install everything-copilot for specialized agent routing.',
-      'Learn More'
-    ).then(selection => {
-      if (selection === 'Learn More') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/faizal13/everything-copilot'));
+  let opened = false;
+  for (const { cmd, args } of chatCommands) {
+    try {
+      if (args) {
+        await vscode.commands.executeCommand(cmd, args);
+      } else {
+        await vscode.commands.executeCommand(cmd);
       }
-    });
-    return false;
-
-  } catch (e: any) {
-    vscode.window.showErrorMessage(`Failed to route to agent: ${e.message}`);
-    return false;
+      opened = true;
+      break;
+    } catch {
+      // Try next command
+      console.log(`[SpecLens] Command ${cmd} failed, trying next...`);
+    }
   }
+
+  if (opened) {
+    vscode.window.showInformationMessage(
+      `🤖 ${agent.handle} prompt ready! Prompt copied to clipboard — paste if it didn't auto-fill.`,
+      'OK'
+    );
+  } else {
+    vscode.window.showInformationMessage(
+      `📋 ${agent.handle} prompt copied to clipboard! Open your AI chat and paste (Cmd+V / Ctrl+V).`,
+      'OK'
+    );
+  }
+
+  return true;
 }
 
 /**

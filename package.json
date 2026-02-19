@@ -3,7 +3,7 @@
   "displayName": "SpecLens",
   "icon": "resources/rakdev-ai.png",
   "description": "Visual layer for Spec-Driven Development with GitHub Spec Kit. AI-powered spec elaboration, validation, traceability matrix, kanban board, and drift detection.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "Rakbank",
   "repository": {
     "type": "git",

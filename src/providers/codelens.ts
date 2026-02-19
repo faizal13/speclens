@@ -1,5 +1,23 @@
 import * as vscode from 'vscode';
 import { parseFrontMatter } from '../indexer';
+import {
+  parseTaskDependencies,
+  parseTaskStatuses,
+  checkDependencies,
+  getActiveInProgressTasks
+} from '../core/task-tracker';
+
+/**
+ * Normalise any status string variant → 'pending' | 'in-progress' | 'blocked' | 'done'
+ * Handles emoji prefixes (e.g. "✅ Completed"), multi-word values, and case variations.
+ */
+function normaliseStatus(raw: string): string {
+  const clean = raw.replace(/^[\s\u00a0\u2000-\u206f\u2e00-\u2e7f\ufeff\u{1f000}-\u{1ffff}\u{20000}-\u{2ffff}]+/u, '').trim().toLowerCase();
+  if (clean.startsWith('done') || clean.startsWith('completed') || clean.startsWith('complete')) return 'done';
+  if (clean.startsWith('in-progress') || clean.startsWith('in progress') || clean.startsWith('inprogress')) return 'in-progress';
+  if (clean.startsWith('blocked')) return 'blocked';
+  return 'pending';
+}
 
 export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
@@ -15,7 +33,7 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
 
     // Spec Kit format: specs/*/tasks.md (no front-matter, uses ## Task N:)
     if (document.uri.fsPath.includes('/specs/') && document.uri.fsPath.endsWith('/tasks.md')) {
-      return this.provideSpecKitTaskLenses(lines, document);
+      return this.provideSpecKitTaskLenses(lines, document, text);
     }
 
     // Legacy RakDev format: docs/tasks/ (YAML front-matter)
@@ -43,9 +61,19 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
   /**
    * Provide CodeLens for Spec Kit format tasks.md
    * Format: ## Task 1: Title
+   *
+   * Features:
+   * - Dependency-aware: Shows warning if dependencies not met
+   * - Single-task rule: Shows warning if another task is in-progress
+   * - Change tracking: Shows file change count for active task
    */
-  private provideSpecKitTaskLenses(lines: string[], document: vscode.TextDocument): vscode.CodeLens[] {
+  private provideSpecKitTaskLenses(lines: string[], document: vscode.TextDocument, text: string): vscode.CodeLens[] {
     const codeLenses: vscode.CodeLens[] = [];
+
+    // Parse all task dependencies and statuses upfront
+    const dependencies = parseTaskDependencies(text);
+    const statuses = parseTaskStatuses(text);
+    const activeTasks = getActiveInProgressTasks(statuses);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -67,15 +95,11 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
         taskContent += lines[j] + '\n';
       }
 
-      // Extract status from **Status:** field
-      const statusMatch = taskContent.match(/\*\*Status:\*\*\s*(Pending|In Progress|Blocked|Done|TODO|IN-PROGRESS|COMPLETED)/i);
+      // Extract status from **Status:** field — handles emojis, spaces, all variants
+      const statusMatch = taskContent.match(/\*\*Status:\*\*\s*[^\w]*([\w][^\n]*)/i);
       let taskStatus: 'pending' | 'in-progress' | 'blocked' | 'done' = 'pending';
       if (statusMatch) {
-        const status = statusMatch[1].toLowerCase();
-        if (status === 'done' || status === 'completed') taskStatus = 'done';
-        else if (status === 'in-progress' || status === 'in progress') taskStatus = 'in-progress';
-        else if (status === 'blocked') taskStatus = 'blocked';
-        else taskStatus = 'pending';
+        taskStatus = normaliseStatus(statusMatch[1]) as 'pending' | 'in-progress' | 'blocked' | 'done';
       }
 
       // Extract estimated time
@@ -87,31 +111,80 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
       const completedChecks = (taskContent.match(/- \[x\]/gi) || []).length;
       const progressPct = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
 
-      // Status indicator
+      // Check dependency status
+      const { canStart, blockers } = checkDependencies(taskId, dependencies, statuses);
+      const deps = dependencies.get(taskId) || [];
+
+      // ── Status line ──
       const statusEmoji = taskStatus === 'done' ? '✅' : taskStatus === 'in-progress' ? '🔵' : taskStatus === 'blocked' ? '🔴' : '🟡';
+      let statusLine = `${statusEmoji} ${taskStatus.toUpperCase()} | ⏱️ ${estimate}h | 📊 ${progressPct}% (${completedChecks}/${totalChecks})`;
+
+      // Show dependency info
+      if (deps.length > 0) {
+        const depStatus = canStart ? '✅ deps met' : `⛔ waiting: ${blockers.map(b => b.taskId).join(', ')}`;
+        statusLine += ` | ${depStatus}`;
+      }
+
       codeLenses.push(new vscode.CodeLens(taskRange, {
-        title: `${statusEmoji} ${taskStatus.toUpperCase()} | ⏱️ ${estimate}h | 📊 ${progressPct}% (${completedChecks}/${totalChecks})`,
+        title: statusLine,
         command: ''
       }));
 
-      // Action buttons based on status
+      // ── Action buttons based on status ──
       if (taskStatus === 'pending') {
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Start Task', command: 'speclens.startTask', arguments: [document.uri, taskId] }));
+        if (!canStart) {
+          // Dependencies not met — show disabled-looking start button with warning
+          codeLenses.push(new vscode.CodeLens(taskRange, {
+            title: '⛔ Start Task (deps not met)',
+            command: 'speclens.startTask',
+            arguments: [document.uri, taskId]
+          }));
+        } else {
+          codeLenses.push(new vscode.CodeLens(taskRange, {
+            title: '▶️ Start Task',
+            command: 'speclens.startTask',
+            arguments: [document.uri, taskId]
+          }));
+        }
       } else if (taskStatus === 'in-progress') {
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '✅ Complete', command: 'speclens.completeTask', arguments: [document.uri, taskId] }));
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '🚫 Block', command: 'speclens.blockTask', arguments: [document.uri, taskId] }));
+        codeLenses.push(new vscode.CodeLens(taskRange, {
+          title: '✅ Complete (Review & Approve)',
+          command: 'speclens.completeTask',
+          arguments: [document.uri, taskId]
+        }));
+        codeLenses.push(new vscode.CodeLens(taskRange, {
+          title: '🚫 Block',
+          command: 'speclens.blockTask',
+          arguments: [document.uri, taskId]
+        }));
       } else if (taskStatus === 'blocked') {
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '▶️ Unblock', command: 'speclens.unblockTask', arguments: [document.uri, taskId] }));
+        codeLenses.push(new vscode.CodeLens(taskRange, {
+          title: '▶️ Unblock',
+          command: 'speclens.unblockTask',
+          arguments: [document.uri, taskId]
+        }));
       } else if (taskStatus === 'done') {
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '🔄 Reopen', command: 'speclens.reopenTask', arguments: [document.uri, taskId] }));
+        codeLenses.push(new vscode.CodeLens(taskRange, {
+          title: '🔄 Reopen',
+          command: 'speclens.reopenTask',
+          arguments: [document.uri, taskId]
+        }));
       }
 
       // Always show "Get AI Help" button
-      codeLenses.push(new vscode.CodeLens(taskRange, { title: '🤖 Get AI Help', command: 'speclens.executeTask', arguments: [document.uri, taskId] }));
+      codeLenses.push(new vscode.CodeLens(taskRange, {
+        title: '🤖 Get AI Help',
+        command: 'speclens.executeTask',
+        arguments: [document.uri, taskId]
+      }));
 
       // View changes button for in-progress/done tasks
       if (taskStatus === 'in-progress' || taskStatus === 'done') {
-        codeLenses.push(new vscode.CodeLens(taskRange, { title: '📝 View Changes', command: 'speclens.viewTaskChanges', arguments: [document.uri, taskId] }));
+        codeLenses.push(new vscode.CodeLens(taskRange, {
+          title: '📝 View Changes',
+          command: 'speclens.viewTaskChanges',
+          arguments: [document.uri, taskId]
+        }));
       }
     }
 
@@ -188,7 +261,7 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
       codeLenses.push(new vscode.CodeLens(topRange, { title: '▶️ Unblock Task', command: 'speclens.unblockTask', arguments: [document.uri, taskId] }));
     }
 
-    codeLenses.push(new vscode.CodeLens(topRange, { title: '🤖 Get Copilot Help', command: 'speclens.executeTask', arguments: [document.uri, taskId] }));
+    codeLenses.push(new vscode.CodeLens(topRange, { title: '🤖 Get AI Help', command: 'speclens.executeTask', arguments: [document.uri, taskId] }));
 
     if (status === 'in-progress' || status === 'done') {
       codeLenses.push(new vscode.CodeLens(topRange, { title: '📝 View Changes', command: 'speclens.viewTaskChanges', arguments: [document.uri, taskId] }));
