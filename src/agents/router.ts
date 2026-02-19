@@ -11,179 +11,146 @@ export interface TaskContext {
 }
 
 /**
- * Route a task to the appropriate AI agent
+ * Route a task to the appropriate AI agent.
+ *
+ * Strategy (most reliable across all agent versions):
+ * 1. Build the prompt
+ * 2. Copy it to clipboard
+ * 3. Try to open the agent's chat/edit panel
+ * 4. Show a notification telling user the prompt is ready to paste
+ *
+ * This ensures the task context always reaches the agent even if
+ * auto-injection APIs differ across versions.
  */
 export async function routeTaskToAgent(context: TaskContext): Promise<boolean> {
   const agent = await getPreferredAgent();
 
   if (!agent) {
     vscode.window.showWarningMessage(
-      'No AI coding agent detected. Please install GitHub Copilot, Claude Code, or Cursor.',
-      'Learn More'
-    ).then(selection => {
-      if (selection === 'Learn More') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/faizal13/speclens#agent-support'));
+      'No AI coding agent detected (Copilot, Claude Code, or Cursor).',
+      'Install Copilot'
+    ).then(sel => {
+      if (sel === 'Install Copilot') {
+        vscode.env.openExternal(vscode.Uri.parse('https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat'));
       }
     });
     return false;
   }
 
-  // Route based on agent type
+  const prompt = buildPrompt(context);
+
+  // Always copy to clipboard first — this is the guaranteed fallback
+  await vscode.env.clipboard.writeText(prompt);
+
+  // Try to open the agent panel and inject the prompt
+  const opened = await tryOpenAgentPanel(agent, prompt);
+
+  if (opened) {
+    vscode.window.showInformationMessage(
+      `🤖 ${agent.name} opened for ${context.taskId}. Prompt copied to clipboard — paste if it didn't auto-fill.`,
+      'OK'
+    );
+  } else {
+    // Panel couldn't be opened programmatically — guide user manually
+    vscode.window.showInformationMessage(
+      `📋 Task prompt copied to clipboard! Open ${agent.name} chat and paste (Cmd+V / Ctrl+V).`,
+      'Open Chat'
+    ).then(async sel => {
+      if (sel === 'Open Chat') {
+        // Try generic chat commands as last resort
+        for (const cmd of [
+          'workbench.action.chat.open',
+          'github.copilot.chat.focus',
+          'claude.chat',
+          'workbench.panel.chat.view.copilot.focus',
+        ]) {
+          try {
+            await vscode.commands.executeCommand(cmd);
+            break;
+          } catch { /* try next */ }
+        }
+      }
+    });
+  }
+
+  return true;
+}
+
+/**
+ * Try to open the agent panel and inject the prompt.
+ * Returns true if successfully opened, false if all attempts failed.
+ */
+async function tryOpenAgentPanel(agent: AgentCapabilities, prompt: string): Promise<boolean> {
+
+  // Commands to try in order, with their argument shapes
+  const attempts: Array<() => Thenable<unknown>> = [];
+
   switch (agent.type) {
     case 'copilot':
-      return await routeToCopilot(context, agent);
+      attempts.push(
+        // Copilot Edit mode (VS Code 1.93+)
+        () => vscode.commands.executeCommand('workbench.action.chat.openEditSession', { query: prompt }),
+        // Copilot Chat panel with query
+        () => vscode.commands.executeCommand('workbench.action.chat.open', { query: prompt }),
+        // Copilot Chat panel without query (just open)
+        () => vscode.commands.executeCommand('workbench.action.chat.open'),
+        // Focus existing chat panel
+        () => vscode.commands.executeCommand('github.copilot.chat.focus'),
+        // Generic workbench chat
+        () => vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus'),
+      );
+      break;
+
     case 'claude':
-      return await routeToClaude(context, agent);
+      attempts.push(
+        () => vscode.commands.executeCommand('claude.edit', prompt),
+        () => vscode.commands.executeCommand('claude.chat', prompt),
+        () => vscode.commands.executeCommand('claude.openChat', prompt),
+      );
+      break;
+
     case 'cursor':
-      return await routeToCursor(context, agent);
-    default:
-      return false;
+      attempts.push(
+        () => vscode.commands.executeCommand('composer.startComposerEdit', { initialPrompt: prompt }),
+        () => vscode.commands.executeCommand('aipopup.action.modal.generate', { what: prompt }),
+        () => vscode.commands.executeCommand('composer.startComposerEdit'),
+      );
+      break;
   }
-}
 
-/**
- * Route task to GitHub Copilot Chat
- */
-async function routeToCopilot(context: TaskContext, agent: AgentCapabilities): Promise<boolean> {
-  const prompt = buildCopilotPrompt(context);
-
-  try {
-    if (context.mode === 'implement' && agent.editCommand) {
-      await vscode.commands.executeCommand(agent.editCommand, { query: prompt });
-      vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
-    } else if (agent.chatCommand) {
-      await vscode.commands.executeCommand(agent.chatCommand, { query: prompt });
-      vscode.window.showInformationMessage(`💬 ${agent.name} opened for task ${context.taskId}`);
+  for (const attempt of attempts) {
+    try {
+      await attempt();
+      return true; // First success wins
+    } catch (e: any) {
+      // Command not found or wrong args — try next
+      console.log(`[SpecLens] Agent command failed: ${e.message}`);
     }
-    return true;
-  } catch (e: any) {
-    vscode.window.showErrorMessage(`Failed to open ${agent.name}: ${e.message}`);
-    return false;
   }
+
+  return false; // All attempts exhausted
 }
 
 /**
- * Route task to Claude Code
+ * Build the task prompt — same format regardless of agent
  */
-async function routeToClaude(context: TaskContext, agent: AgentCapabilities): Promise<boolean> {
-  const prompt = buildClaudePrompt(context);
+function buildPrompt(context: TaskContext): string {
+  const featureName = context.requirementId?.replace('spec-', '') ?? 'this feature';
+  const action = context.mode === 'implement'
+    ? `Implement the following task for ${featureName}`
+    : `Help me implement the following task for ${featureName}`;
 
-  try {
-    if (context.mode === 'implement' && agent.editCommand) {
-      // Claude Code edit mode
-      await vscode.commands.executeCommand(agent.editCommand, prompt);
-      vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
-    } else if (agent.chatCommand) {
-      // Claude Code chat mode
-      await vscode.commands.executeCommand(agent.chatCommand, prompt);
-      vscode.window.showInformationMessage(`💬 ${agent.name} opened for task ${context.taskId}`);
-    }
-    return true;
-  } catch (e: any) {
-    vscode.window.showErrorMessage(`Failed to open ${agent.name}: ${e.message}`);
-    return false;
-  }
-}
-
-/**
- * Route task to Cursor Composer
- */
-async function routeToCursor(context: TaskContext, agent: AgentCapabilities): Promise<boolean> {
-  const prompt = buildCursorPrompt(context);
-
-  try {
-    if (agent.editCommand) {
-      // Cursor composer always opens in edit mode
-      await vscode.commands.executeCommand(agent.editCommand, { initialPrompt: prompt });
-      vscode.window.showInformationMessage(`🚀 Task ${context.taskId} started with ${agent.name}!`);
-    }
-    return true;
-  } catch (e: any) {
-    vscode.window.showErrorMessage(`Failed to open ${agent.name}: ${e.message}`);
-    return false;
-  }
-}
-
-/**
- * Build prompt for GitHub Copilot (uses @workspace)
- */
-function buildCopilotPrompt(context: TaskContext): string {
-  const action = context.mode === 'implement' ? 'implement' : 'help with implementing';
-
-  let prompt = `@workspace I need to ${action} this task:\n\n`;
-  prompt += `**Task ID:** ${context.taskId}\n`;
-  prompt += `**Title:** ${context.taskTitle}\n`;
-
-  if (context.requirementId) {
-    prompt += `**Requirement:** ${context.requirementId}\n`;
-  }
-  if (context.designId) {
-    prompt += `**Design:** ${context.designId}\n`;
-  }
-
-  prompt += `\n**Task Details:**\n\`\`\`markdown\n${context.taskContent}\n\`\`\`\n\n`;
+  let prompt = `${action}:\n\n`;
+  prompt += `**Task:** ${context.taskId} — ${context.taskTitle}\n\n`;
+  prompt += `---\n\n`;
+  prompt += context.taskContent;
+  prompt += `\n\n---\n\n`;
 
   if (context.mode === 'implement') {
-    prompt += `**ACTION REQUIRED:**\n`;
-    prompt += `1. Read the requirement and design files\n`;
-    prompt += `2. Analyze the task implementation steps and acceptance criteria\n`;
-    prompt += `3. Generate/modify code files to implement this task\n`;
-    prompt += `4. Follow the design architecture and patterns\n\n`;
-    prompt += `Please start implementing this task now.`;
+    prompt += `Please implement this task step by step, following the acceptance criteria above.`;
   } else {
-    prompt += `**HELP NEEDED:**\n`;
-    prompt += `1. Review the requirement and design context\n`;
-    prompt += `2. Provide step-by-step guidance for implementing this task\n`;
-    prompt += `3. Suggest code examples and patterns\n`;
-    prompt += `4. Help verify the acceptance criteria\n\n`;
-    prompt += `What should I implement first for this task?`;
+    prompt += `Please provide step-by-step guidance for implementing this task and help me verify the acceptance criteria.`;
   }
-
-  return prompt;
-}
-
-/**
- * Build prompt for Claude Code (more conversational)
- */
-function buildClaudePrompt(context: TaskContext): string {
-  const action = context.mode === 'implement' ? 'Implement' : 'Help me implement';
-
-  let prompt = `${action} task ${context.taskId}: ${context.taskTitle}\n\n`;
-
-  if (context.requirementId || context.designId) {
-    prompt += `Context:\n`;
-    if (context.requirementId) prompt += `- Requirement: ${context.requirementId}\n`;
-    if (context.designId) prompt += `- Design: ${context.designId}\n`;
-    prompt += `\n`;
-  }
-
-  prompt += `Task details:\n${context.taskContent}\n`;
-
-  if (context.mode === 'implement') {
-    prompt += `\nPlease read the requirement and design files, then implement this task following the acceptance criteria.`;
-  } else {
-    prompt += `\nPlease provide step-by-step guidance for implementing this task.`;
-  }
-
-  return prompt;
-}
-
-/**
- * Build prompt for Cursor Composer
- */
-function buildCursorPrompt(context: TaskContext): string {
-  // Cursor composer is direct and action-oriented
-  let prompt = `Implement ${context.taskId}: ${context.taskTitle}\n\n`;
-
-  if (context.requirementId || context.designId) {
-    prompt += `Reference:\n`;
-    if (context.requirementId) prompt += `- ${context.requirementId}\n`;
-    if (context.designId) prompt += `- ${context.designId}\n`;
-    prompt += `\n`;
-  }
-
-  prompt += `${context.taskContent}\n\n`;
-  prompt += `Follow the acceptance criteria and implement the changes.`;
 
   return prompt;
 }
