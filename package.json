@@ -53,7 +53,8 @@
       {"command": "speclens.showFlowSummary", "title": "RakDev AI: Show Flow Summary"},
       {"command": "speclens.generateRequirementsDoc", "title": "RakDev AI: Generate Requirements Catalog"},
       {"command": "speclens.generateDesignFromRequirement", "title": "RakDev AI: Generate Design from Requirement"},
-      {"command": "speclens.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"}
+      {"command": "speclens.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"},
+      {"command": "speclens.restartTask", "title": "SpecLens: 🔁 Restart Task"}
     ],
     "configuration": {
       "type": "object",
