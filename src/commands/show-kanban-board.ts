@@ -119,14 +119,14 @@ async function buildKanbanBoard(featurePath: string, featureName: string): Promi
       const descMatch = taskContent.match(/\*\*Description:\*\*\s*(.+)/);
       const description = descMatch ? descMatch[1].trim() : '';
 
-      // Extract status
-      const statusMatch = taskContent.match(/\*\*Status:\*\*\s*(\w+)/i);
+      // Extract status — handles emojis, spaces, all variants
+      const statusMatch = taskContent.match(/\*\*Status:\*\*\s*[^\w]*([\w][^\n]*)/i);
       let status: 'pending' | 'in-progress' | 'blocked' | 'done' = 'pending';
       if (statusMatch) {
-        const statusText = statusMatch[1].toLowerCase();
-        if (statusText === 'done' || statusText === 'completed') status = 'done';
-        else if (statusText === 'in-progress' || statusText === 'in_progress') status = 'in-progress';
-        else if (statusText === 'blocked') status = 'blocked';
+        const s = statusMatch[1].replace(/^[\s\u00a0\u2000-\u206f\u2e00-\u2e7f\ufeff\u{1f000}-\u{1ffff}\u{20000}-\u{2ffff}]+/u, '').trim().toLowerCase();
+        if (s.startsWith('done') || s.startsWith('completed') || s.startsWith('complete')) status = 'done';
+        else if (s.startsWith('in-progress') || s.startsWith('in progress') || s.startsWith('inprogress')) status = 'in-progress';
+        else if (s.startsWith('blocked')) status = 'blocked';
       }
 
       // Extract estimated hours

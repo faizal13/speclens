@@ -186,12 +186,25 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   // CodeLens for Spec Kit tasks.md
+  const codeLensProvider = new RakdevAiTaskCodeLensProvider();
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
       { language: "markdown", pattern: "**/specs/*/tasks.md" },
-      new RakdevAiTaskCodeLensProvider(),
+      codeLensProvider,
+    ),
+    // Also register for legacy docs/tasks/ format
+    vscode.languages.registerCodeLensProvider(
+      { language: "markdown", pattern: "**/docs/tasks/**/*.md" },
+      codeLensProvider,
     ),
   );
+
+  // Refresh CodeLens when tasks.md files change
+  const codeLensWatcher = vscode.workspace.createFileSystemWatcher(
+    "**/{specs/*/tasks.md,docs/tasks/**/*.md}",
+  );
+  codeLensWatcher.onDidChange(() => codeLensProvider.refresh());
+  context.subscriptions.push(codeLensWatcher);
 
   // Status bar
   createStatusBar(context);
