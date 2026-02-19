@@ -376,6 +376,205 @@ export async function completeTask(
   }
 }
 
+/**
+ * Restart Task — always available regardless of current status.
+ *
+ * Behaviour:
+ *  - If existing code changes are detected since the last git snapshot:
+ *      → Send task to agent in VERIFY mode: "check if this is already implemented"
+ *      → Do NOT ask the agent to re-implement (avoids overwriting working code)
+ *  - If no code changes detected (or no snapshot exists):
+ *      → Behave exactly like Start Task (full implementation mode)
+ *
+ * In both cases the task status is set to in-progress and a fresh snapshot
+ * is recorded so change tracking stays accurate.
+ */
+export async function restartTask(
+  uri: vscode.Uri,
+  taskId: string,
+  handleChange: HandleChangeFn,
+) {
+  // ── GATE 1: Check dependencies (still enforced) ──
+  if (!await validateDependencies(uri, taskId)) return;
+
+  // ── GATE 2: Single active task (warn but allow override) ──
+  if (!await validateSingleActiveTask(uri, taskId)) return;
+
+  // ── Check for existing changes since last snapshot ──
+  const previousSnapshot = await loadActiveTask();
+  const hasExistingSnapshot =
+    previousSnapshot?.taskId === taskId && previousSnapshot?.startCommitHash;
+
+  let hasCodeChanges = false;
+  let changesSummary = '';
+  if (hasExistingSnapshot) {
+    const changes = getFileChangesSince(previousSnapshot!.startCommitHash);
+    hasCodeChanges = changes.totalChanges > 0;
+    if (hasCodeChanges) {
+      const parts: string[] = [];
+      if (changes.modifiedFiles.length) parts.push(`${changes.modifiedFiles.length} modified`);
+      if (changes.addedFiles.length) parts.push(`${changes.addedFiles.length} added`);
+      if (changes.deletedFiles.length) parts.push(`${changes.deletedFiles.length} deleted`);
+      if (changes.untrackedFiles.length) parts.push(`${changes.untrackedFiles.length} untracked`);
+      changesSummary = parts.join(', ');
+    }
+  }
+
+  // ── Set status to in-progress and record a fresh git snapshot ──
+  await updateTaskStatus(uri, "in-progress", handleChange, taskId);
+
+  const commitHash = getCurrentCommitHash();
+  const doc = await vscode.workspace.openTextDocument(uri);
+  const text = doc.getText();
+  const isSpecKit = isSpecKitFormat(uri);
+  let taskTitle = taskId;
+  let taskContent = text;
+  let reqId = 'unknown';
+  let designId = 'unknown';
+
+  if (isSpecKit) {
+    const extracted = extractSpecKitTask(text, taskId, uri);
+    taskTitle = extracted.taskTitle;
+    taskContent = extracted.taskContent;
+    reqId = extracted.reqId;
+    designId = extracted.designId;
+  } else {
+    const extracted = extractLegacyTask(text, taskId);
+    taskTitle = extracted.taskTitle;
+    taskContent = extracted.taskContent;
+    reqId = extracted.reqId;
+    designId = extracted.designId;
+  }
+
+  if (commitHash) {
+    const activeTaskInfo: ActiveTaskInfo = {
+      taskId,
+      taskTitle,
+      featurePath: path.dirname(uri.fsPath),
+      tasksFileUri: uri.fsPath,
+      startedAt: new Date().toISOString(),
+      startCommitHash: commitHash,
+      startFileSnapshot: []
+    };
+    await saveActiveTask(activeTaskInfo);
+  }
+
+  // ── Route to agent with the right mode ──
+  const acceptanceCriteria: string[] = [];
+  const criteriaRegex = /- \[[ x]\] (.+)/g;
+  let match;
+  while ((match = criteriaRegex.exec(taskContent)) !== null) {
+    acceptanceCriteria.push(match[1]);
+  }
+
+  if (hasCodeChanges) {
+    // VERIFY mode — ask agent to check existing work, not re-implement
+    vscode.window.showInformationMessage(
+      `🔍 ${taskId}: Found existing changes (${changesSummary}). Asking agent to verify implementation...`
+    );
+
+    const verifyPrompt = buildVerifyPrompt(taskId, taskTitle, taskContent, acceptanceCriteria, changesSummary);
+    await vscode.env.clipboard.writeText(verifyPrompt);
+
+    let opened = false;
+    for (const cmd of [
+      'workbench.action.chat.open',
+      'github.copilot.chat.focus',
+      'workbench.panel.chat.view.copilot.focus',
+    ]) {
+      try {
+        await vscode.commands.executeCommand(cmd, { query: verifyPrompt });
+        opened = true;
+        break;
+      } catch {
+        try {
+          await vscode.commands.executeCommand(cmd);
+          opened = true;
+          break;
+        } catch { /* try next */ }
+      }
+    }
+
+    if (!opened) {
+      vscode.window.showInformationMessage(
+        `📋 Verify prompt copied to clipboard! Paste into your AI chat to check existing implementation.`
+      );
+    }
+  } else {
+    // IMPLEMENT mode — no changes exist, behave like Start Task
+    vscode.window.showInformationMessage(
+      `🔄 Restarting ${taskId} — no existing changes found, routing for fresh implementation.`
+    );
+
+    const hasEverythingCopilot = await isEverythingCopilotAvailable();
+    if (hasEverythingCopilot) {
+      const featureFolder = path.dirname(uri.fsPath);
+      let spec: string | undefined;
+      let plan: string | undefined;
+      try {
+        const specContent = await vscode.workspace.fs.readFile(
+          vscode.Uri.file(path.join(featureFolder, 'spec.md'))
+        );
+        spec = Buffer.from(specContent).toString('utf8');
+      } catch { /* not found */ }
+      try {
+        const planContent = await vscode.workspace.fs.readFile(
+          vscode.Uri.file(path.join(featureFolder, 'plan.md'))
+        );
+        plan = Buffer.from(planContent).toString('utf8');
+      } catch { /* not found */ }
+
+      await routeToEverythingCopilot(
+        { taskId, taskTitle, taskContent, acceptanceCriteria, requirementId: reqId, designId },
+        spec, plan
+      );
+    } else {
+      await routeTaskToAgent({
+        taskId, taskTitle, taskContent,
+        requirementId: reqId, designId,
+        mode: 'implement',
+      });
+    }
+  }
+}
+
+/**
+ * Build a verification prompt — asks the agent to check existing code
+ * against the acceptance criteria WITHOUT re-implementing from scratch.
+ */
+function buildVerifyPrompt(
+  taskId: string,
+  taskTitle: string,
+  taskContent: string,
+  acceptanceCriteria: string[],
+  changesSummary: string
+): string {
+  const criteriaList = acceptanceCriteria.length > 0
+    ? acceptanceCriteria.map(c => `  - [ ] ${c}`).join('\n')
+    : '  (see task content below)';
+
+  return `@workspace I need you to VERIFY (not re-implement) the work for task ${taskId}.
+
+**Task:** ${taskId} — ${taskTitle}
+**Existing changes detected:** ${changesSummary}
+
+⚠️ IMPORTANT: Code changes already exist in the workspace. Do NOT rewrite or override any existing implementation.
+
+Instead, please:
+1. Review the existing code changes in the workspace
+2. Check each acceptance criterion below and confirm if it is already satisfied
+3. For any criterion NOT yet met, explain what is still missing (but don't implement it yet — just report)
+4. Give me a summary: ✅ Done / ⚠️ Partial / ❌ Missing for each criterion
+
+**Acceptance Criteria to verify:**
+${criteriaList}
+
+**Full task context:**
+${taskContent}
+
+Please do a thorough @workspace search to find the relevant files and verify the implementation.`;
+}
+
 export async function blockTask(
   uri: vscode.Uri,
   taskId: string,

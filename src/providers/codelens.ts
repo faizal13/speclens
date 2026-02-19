@@ -133,7 +133,7 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
       // ── Action buttons based on status ──
       if (taskStatus === 'pending') {
         if (!canStart) {
-          // Dependencies not met — show disabled-looking start button with warning
+          // Dependencies not met — warn but still allow trying
           codeLenses.push(new vscode.CodeLens(taskRange, {
             title: '⛔ Start Task (deps not met)',
             command: 'speclens.startTask',
@@ -170,6 +170,14 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
           arguments: [document.uri, taskId]
         }));
       }
+
+      // ── Restart Task — always visible on every status ──
+      // Verifies existing changes if any, otherwise re-implements from scratch
+      codeLenses.push(new vscode.CodeLens(taskRange, {
+        title: '🔁 Restart Task',
+        command: 'speclens.restartTask',
+        arguments: [document.uri, taskId]
+      }));
 
       // Always show "Get AI Help" button
       codeLenses.push(new vscode.CodeLens(taskRange, {

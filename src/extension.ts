@@ -25,6 +25,7 @@ import {
   unblockTask,
   executeTask,
   viewTaskChanges,
+  restartTask,
 } from "./commands/task-lifecycle";
 import { elaborateSpec } from "./commands/elaborate-spec";
 import { generatePlanFromSpec } from "./commands/generate-plan";
@@ -127,6 +128,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("speclens.viewTaskChanges", (uri, taskId) =>
       viewTaskChanges(uri, taskId),
+    ),
+    vscode.commands.registerCommand("speclens.restartTask", (uri, taskId) =>
+      restartTask(uri, taskId, handleChange),
     ),
     vscode.commands.registerCommand("speclens.elaborateSpec", () =>
       elaborateSpec(),
