@@ -66,7 +66,7 @@ export async function validateUri(
     return;
   }
 
-  // Rakdev format validation (strict)
+  // Legacy format validation (strict)
   // Generic status validation
   const status = (entry.data.status || "").toString();
   if (status && !STATUS[entry.kind].includes(status)) {
@@ -174,7 +174,7 @@ export async function validateAllOpen(
   diagnosticCollection: vscode.DiagnosticCollection,
   onComplete?: () => void,
 ) {
-  // Validate all indexed entries (works for both rakdev and speckit formats)
+  // Validate all indexed entries (works for both legacy and speckit formats)
   for (const entry of index.entries.values()) {
     await validateUri(entry.uri, index, diagnosticCollection);
   }

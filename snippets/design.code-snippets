@@ -1,6 +1,6 @@
 {
-  "RakDev AI Design": {
-    "prefix": "rakdev-des",
+  "SpecLens Design": {
+    "prefix": "speclens-des",
     "body": [
       "---",
       "id: DES-${CURRENT_YEAR}-${RANDOM}",

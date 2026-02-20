@@ -19,7 +19,7 @@ function normaliseStatus(raw: string): string {
   return 'pending';
 }
 
-export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
+export class SpecLensCodeLensProvider implements vscode.CodeLensProvider {
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
@@ -36,7 +36,7 @@ export class RakdevAiTaskCodeLensProvider implements vscode.CodeLensProvider {
       return this.provideSpecKitTaskLenses(lines, document, text);
     }
 
-    // Legacy RakDev format: docs/tasks/ (YAML front-matter)
+    // Legacy SpecLens format: docs/tasks/ (YAML front-matter)
     if (!document.uri.fsPath.includes('/docs/tasks/')) {
       return [];
     }

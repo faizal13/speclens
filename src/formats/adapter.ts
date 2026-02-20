@@ -7,7 +7,7 @@ export interface ParsedDocument {
   type: DocumentType;
   uri: vscode.Uri;
   data: any;
-  format: 'rakdev' | 'speckit';
+  format: 'legacy' | 'speckit';
 }
 
 export interface FormatAdapter {
@@ -17,11 +17,11 @@ export interface FormatAdapter {
   parseDocument(uri: vscode.Uri): Promise<ParsedDocument | undefined>;
 }
 
-export async function detectFormats(workspaceUri: vscode.Uri): Promise<{ rakdev: boolean; speckit: boolean }> {
-  const rakdevExists = await pathExists(vscode.Uri.joinPath(workspaceUri, 'docs'));
+export async function detectFormats(workspaceUri: vscode.Uri): Promise<{ legacy: boolean; speckit: boolean }> {
+  const legacyExists = await pathExists(vscode.Uri.joinPath(workspaceUri, 'docs'));
   const speckitExists = await pathExists(vscode.Uri.joinPath(workspaceUri, 'specs'));
 
-  return { rakdev: rakdevExists, speckit: speckitExists };
+  return { legacy: legacyExists, speckit: speckitExists };
 }
 
 async function pathExists(uri: vscode.Uri): Promise<boolean> {

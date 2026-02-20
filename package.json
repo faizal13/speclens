@@ -1,10 +1,10 @@
 {
   "name": "speclens",
   "displayName": "SpecLens",
-  "icon": "resources/rakdev-ai.png",
+  "icon": "resources/speclens-icon.png",
   "description": "Visual layer for Spec-Driven Development with GitHub Spec Kit. AI-powered spec elaboration, validation, traceability matrix, kanban board, and drift detection.",
-  "version": "0.0.5",
-  "publisher": "Rakbank",
+  "version": "0.0.6",
+  "publisher": "speclens",
   "repository": {
     "type": "git",
     "url": "https://github.com/faizal13/speclens.git"
@@ -31,7 +31,8 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "workspaceContains:docs/requirements"
+    "workspaceContains:docs/requirements",
+    "workspaceContains:specs"
   ],
   "main": "dist/extension.js",
   "contributes": {
@@ -45,20 +46,27 @@
       {"command": "speclens.showTraceabilityMatrix", "title": "SpecLens: 🔗 Show Traceability Matrix", "category": "SpecLens"},
       {"command": "speclens.showKanbanBoard", "title": "SpecLens: 📋 Show Kanban Board", "category": "SpecLens"},
       {"command": "speclens.detectSpecDrift", "title": "SpecLens: 🔍 Detect Spec Drift", "category": "SpecLens"},
-      {"command": "speclens.newRequirement", "title": "RakDev AI: New Requirement"},
-      {"command": "speclens.newDesign", "title": "RakDev AI: New Design"},
-      {"command": "speclens.newTask", "title": "RakDev AI: New Task"},
-      {"command": "speclens.validateWorkspace", "title": "RakDev AI: Validate Workspace"},
-      {"command": "speclens.generateTaskBreakdown", "title": "RakDev AI: Generate Task Breakdown"},
-      {"command": "speclens.showFlowSummary", "title": "RakDev AI: Show Flow Summary"},
-      {"command": "speclens.generateRequirementsDoc", "title": "RakDev AI: Generate Requirements Catalog"},
-      {"command": "speclens.generateDesignFromRequirement", "title": "RakDev AI: Generate Design from Requirement"},
-      {"command": "speclens.generateTasksFromDesign", "title": "RakDev AI: Generate Tasks from Design (Interactive)"},
-      {"command": "speclens.restartTask", "title": "SpecLens: 🔁 Restart Task"}
+      {"command": "speclens.newRequirement", "title": "SpecLens: 📄 New Requirement"},
+      {"command": "speclens.newDesign", "title": "SpecLens: 🎨 New Design"},
+      {"command": "speclens.newTask", "title": "SpecLens: ✏️ New Task"},
+      {"command": "speclens.validateWorkspace", "title": "SpecLens: ✅ Validate Workspace"},
+      {"command": "speclens.generateTaskBreakdown", "title": "SpecLens: 🗂️ Generate Task Breakdown"},
+      {"command": "speclens.showFlowSummary", "title": "SpecLens: 📈 Show Flow Summary"},
+      {"command": "speclens.generateRequirementsDoc", "title": "SpecLens: 📚 Generate Requirements Catalog"},
+      {"command": "speclens.generateDesignFromRequirement", "title": "SpecLens: 🎨 Generate Design from Requirement"},
+      {"command": "speclens.generateTasksFromDesign", "title": "SpecLens: 📋 Generate Tasks from Design (Interactive)"},
+      {"command": "speclens.startTask",       "title": "SpecLens: ▶️ Start Task",          "category": "SpecLens"},
+      {"command": "speclens.completeTask",    "title": "SpecLens: ✅ Complete Task",        "category": "SpecLens"},
+      {"command": "speclens.blockTask",       "title": "SpecLens: 🚫 Block Task",           "category": "SpecLens"},
+      {"command": "speclens.reopenTask",      "title": "SpecLens: 🔄 Reopen Task",          "category": "SpecLens"},
+      {"command": "speclens.unblockTask",     "title": "SpecLens: ▶️ Unblock Task",         "category": "SpecLens"},
+      {"command": "speclens.executeTask",     "title": "SpecLens: 🤖 Get AI Help on Task",  "category": "SpecLens"},
+      {"command": "speclens.viewTaskChanges", "title": "SpecLens: 📝 View Task Changes",    "category": "SpecLens"},
+      {"command": "speclens.restartTask",     "title": "SpecLens: 🔁 Restart Task",         "category": "SpecLens"}
     ],
     "configuration": {
       "type": "object",
-      "title": "RakDev AI Configuration",
+      "title": "SpecLens Configuration",
       "properties": {
         "speclens.idFormats.requirement": {"type": "string", "default": "^REQ-[0-9]{4}-[0-9]{4}$", "description": "Regex for requirement IDs."},
         "speclens.idFormats.design": {"type": "string", "default": "^DES-[0-9]{4}-[0-9]{4}$", "description": "Regex for design IDs."},
@@ -74,7 +82,7 @@
     },
     "views": {
       "explorer": [
-        {"id": "speclens.view", "name": "SpecLens", "icon": "resources/rakdev-ai.svg"}
+        {"id": "speclens.view", "name": "SpecLens", "icon": "resources/speclens-icon.svg"}
       ]
     },
     "snippets": [

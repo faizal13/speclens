@@ -1,6 +1,6 @@
 {
-  "RakDev AI Requirement": {
-    "prefix": "rakdev-req",
+  "SpecLens Requirement": {
+    "prefix": "speclens-req",
     "body": [
       "---",
       "id: REQ-${CURRENT_YEAR}-${RANDOM}",

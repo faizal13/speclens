@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { REQUIRED_KEYS } from '../core/validator';
 
-export class RakdevAiCodeActionProvider implements vscode.CodeActionProvider {
+export class SpecLensCodeActionProvider implements vscode.CodeActionProvider {
   provideCodeActions(doc: vscode.TextDocument, _range: vscode.Range | vscode.Selection): vscode.CodeAction[] | undefined {
     if (!doc.uri.fsPath.includes('/docs/')) return;
     const kind = doc.uri.fsPath.includes('/requirements/') ? 'requirement' : doc.uri.fsPath.includes('/designs/') ? 'design' : doc.uri.fsPath.includes('/tasks/') ? 'task' : undefined;

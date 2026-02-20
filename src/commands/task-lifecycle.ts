@@ -74,7 +74,7 @@ function extractSpecKitTask(text: string, taskId: string, uri: vscode.Uri): {
 }
 
 /**
- * Extract task content for legacy RakDev format
+ * Extract task content for legacy SpecLens format
  */
 function extractLegacyTask(text: string, taskId: string): {
   taskTitle: string;
@@ -812,7 +812,7 @@ export async function updateTaskStatus(
     return updateSpecKitTaskStatus(uri, taskId, newStatus, handleChange);
   }
 
-  // Legacy RakDev format: YAML front-matter
+  // Legacy SpecLens format: YAML front-matter
   const fmMatch = /^---\n([\s\S]*?)\n---/m.exec(text);
 
   if (!fmMatch) {
