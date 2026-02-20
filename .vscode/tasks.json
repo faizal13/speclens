@@ -2,19 +2,19 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "RakDev AI: New Requirement",
+      "label": "SpecLens: New Requirement",
       "type": "shell",
       "command": "node scripts/new.js req ${input:slug}",
       "problemMatcher": []
     },
     {
-      "label": "RakDev AI: New Design",
+      "label": "SpecLens: New Design",
       "type": "shell",
       "command": "node scripts/new.js design ${input:reqId}",
       "problemMatcher": []
     },
     {
-      "label": "RakDev AI: New Task",
+      "label": "SpecLens: New Task",
       "type": "shell",
       "command": "node scripts/new.js task ${input:reqId} ${input:taskSlug}",
       "problemMatcher": []

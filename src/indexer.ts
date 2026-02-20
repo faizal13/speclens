@@ -11,7 +11,7 @@ export interface IndexedEntry {
   uri: vscode.Uri;
   kind: FileKind;
   data: any;
-  format?: "rakdev" | "speckit";
+  format?: "legacy" | "speckit";
   documentType?: DocumentType;
 }
 

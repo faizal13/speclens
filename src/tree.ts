@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { WorkspaceIndex, FileKind } from './indexer';
 
-export class RakdevAiTreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
+export class SpecLensTreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
   private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> = new vscode.EventEmitter();
   readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> = this._onDidChangeTreeData.event;
 

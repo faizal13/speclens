@@ -1,6 +1,6 @@
 {
-  "RakDev AI Task": {
-    "prefix": "rakdev-task",
+  "SpecLens Task": {
+    "prefix": "speclens-task",
     "body": [
       "---",
       "id: TASK-${CURRENT_YEAR}-${RANDOM}",

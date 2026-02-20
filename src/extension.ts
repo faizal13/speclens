@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { indexWorkspace, WorkspaceIndex } from "./indexer";
-import { RakdevAiTreeDataProvider } from "./tree";
+import { SpecLensTreeDataProvider } from "./tree";
 import { validateUri, validateAllOpen } from "./core/validator";
-import { RakdevAiCodeActionProvider } from "./providers/codeactions";
-import { RakdevAiTaskCodeLensProvider } from "./providers/codelens";
+import { SpecLensCodeActionProvider } from "./providers/codeactions";
+import { SpecLensCodeLensProvider } from "./providers/codelens";
 import {
   createStatusBar,
   updateStatusBar,
@@ -38,7 +38,7 @@ import { showKanbanBoard } from "./commands/show-kanban-board";
 import { detectSpecDrift } from "./commands/detect-spec-drift";
 
 let index: WorkspaceIndex;
-let treeProvider: RakdevAiTreeDataProvider;
+let treeProvider: SpecLensTreeDataProvider;
 let diagnosticCollection: vscode.DiagnosticCollection;
 
 async function handleChange(uri: vscode.Uri) {
@@ -60,7 +60,7 @@ async function handleDelete(uri: vscode.Uri) {
 
 export async function activate(context: vscode.ExtensionContext) {
   index = await indexWorkspace();
-  treeProvider = new RakdevAiTreeDataProvider(index);
+  treeProvider = new SpecLensTreeDataProvider(index);
   vscode.window.registerTreeDataProvider("speclens.view", treeProvider);
 
   // File watcher for Spec Kit format
@@ -184,13 +184,13 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
       { language: "markdown", scheme: "file" },
-      new RakdevAiCodeActionProvider(),
+      new SpecLensCodeActionProvider(),
       { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
     ),
   );
 
   // CodeLens for Spec Kit tasks.md
-  const codeLensProvider = new RakdevAiTaskCodeLensProvider();
+  const codeLensProvider = new SpecLensCodeLensProvider();
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
       { language: "markdown", pattern: "**/specs/*/tasks.md" },
